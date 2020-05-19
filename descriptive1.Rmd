@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r nettoyage des données,include=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 library(readxl)
-DATA<- read_excel("EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx")
+DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable"),col_names = TRUE)
 
 DATAREF<-DATA
 
@@ -33,16 +33,16 @@ library("naniar")
 
 #nettoyage de la base de donnee
 
-na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available",'not available')
-
-replace_with_na_all(data=DATA,condition = ~.x %in% na_strings)
-
 colnames(DATA)[colnames(DATA)=="CODE_CENTER_COUNTRY"] <- "COUNTRY"
 colnames(DATA)[colnames(DATA)=='CODE_CENTER_CITY']<-"CITY"
-colnames(DATA)[colnames(DATA)=="ESTIMATED.RATE_.ve_SIC...."]<-"RATE.SIC.POS"
 colnames(DATA)[colnames(DATA)=="DIAGNOSIS_SIC"]<-"DIAGNOSIS"
+DATA$DIAGNOSIS<-as.factor(DATA$DIAGNOSIS)
 colnames(DATA)[colnames(DATA)=="HEIGHT (in cm)"]<-"HEIGHT"
 DATA$HEIGHT<-DATA$HEIGHT/100
+DATA$BMI.CAT<-as.factor(DATA$BMI.CAT)
+DATA$SEX<-as.factor(DATA$SEX)
+DATA$SEX[DATA$SEX%in%c("F")]<-"female"
+DATA$SEX[DATA$SEX%in%c("M")]<-"male"
 DATA$RACE<-tolower(DATA$RACE)
 DATA$RACE<-factor(DATA$RACE)
 DATA$EDUCATION<-tolower(DATA$EDUCATION)
