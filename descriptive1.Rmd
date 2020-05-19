@@ -28,14 +28,20 @@ library("questionr")
 library("ggplot2")
 library("wesanderson")
 library("lmtest")
+library("tidyr")
+library("naniar")
 
 #nettoyage de la base de donnee
+
+na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available",'not available')
+
+replace_with_na_all(data=DATA,condition = ~.x %in% na_strings)
 
 colnames(DATA)[colnames(DATA)=="CODE_CENTER_COUNTRY"] <- "COUNTRY"
 colnames(DATA)[colnames(DATA)=='CODE_CENTER_CITY']<-"CITY"
 colnames(DATA)[colnames(DATA)=="ESTIMATED.RATE_.ve_SIC...."]<-"RATE.SIC.POS"
 colnames(DATA)[colnames(DATA)=="DIAGNOSIS_SIC"]<-"DIAGNOSIS"
-colnames(DATA)[colnames(DATA)=="HEIGHT..in.cm."]<-"HEIGHT"
+colnames(DATA)[colnames(DATA)=="HEIGHT (in cm)"]<-"HEIGHT"
 DATA$HEIGHT<-DATA$HEIGHT/100
 DATA$RACE<-tolower(DATA$RACE)
 DATA$RACE<-factor(DATA$RACE)
