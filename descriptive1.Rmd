@@ -50,20 +50,31 @@ DATA$EDUCATION<-factor(DATA$EDUCATION)
 DATA$JOB<-tolower(DATA$JOB)
 DATA$JOB<-factor(DATA$JOB)
 DATA$JOB[DATA$JOB%in%c("mechanical engineers")]<-"mechanical engineer"
-DATA<-subset(DATA,select = -c(CODE_ISCO))
+DATA$JOB[DATA$JOB%in%c("cooker")]<-"cook"
+DATA$JOB[DATA$JOB%in%c("cabinet-maker")]<-"cabinetmaker"
+DATA$JOB[DATA$JOB%in%c("care assisstant")]<-"care assistant"
+DATA$JOB[DATA$JOB%in%c("saw mill worker","saw mill operative")]<-"sawmill worker"
+DATA$JOB[DATA$JOB%in%c("hair dresser")]<-"hairdresser"
 DATA$JOB_CLASS<-tolower(DATA$JOB_CLASS)
 DATA$JOB_CLASS<-factor(DATA$JOB_CLASS)
 DATA$AGENT_NAME<-tolower(DATA$AGENT_NAME)
 DATA$AGENT_NAME<-as.character(DATA$AGENT_NAME)
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("isocyanates")]<-"isocyanate"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("flours")]<-"flour"
-DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("acideanhydride","anhydre","anhydrides")]<-"acide anhydride"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("acideanhydride","acide anhydride","acidanhydrides","anhydre","anhydrides")]<-"acid anhydride"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("persulfates","persuphates","persulphate salts","persulphates","persulfate salts")]<-"persulfate"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("acrylates","acrilic polymer")]<-"acrylate"
-DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("ammonium persulfates","ammonium persulphate")]<-"ammonium persulfate"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("ammonium persulfates","ammonium persulphate","ammoniumapersulphate","ammoniumpersulphate")]<-"ammonium persulfate"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("cow epithel","cow hair","cow epithelia","bovine hair")]<-"cow epithelium"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("paint  and solvents","paints and solvants")]<-"paints and solvents"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("drugs")]<-"drug"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("epoxide","epoxi")]<-"epoxy"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("thiamne")]<-"thiamine" 
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("gypsophila plant")]<-"gypsophila" 
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("cyanoacrylates")]<-"cyanoacrylate"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("wheat + rye flour" )]<-"wheat and rye flour"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("chromium")]<-"chronium"
+DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("animal hairs")]<-"animal hair"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("mdi-icocyanate")]<-"mdi-isocyanate"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("methacrylates")]<-"methacrylate"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("mhhpa acid anhydride","mhhpanhydride")]<-"mhhpa anhydride"
@@ -85,22 +96,34 @@ DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("wheat")]<-"wheat flour"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("storage dust mite lepidoglyphus destructor")]<-"storage mite lepidoglyphus destructor"
 DATA$AGENT_NAME[DATA$AGENT_NAME%in%c("aldehydes","aldehydes;benzenic solvants","aldéhydes","aldehydes; benzenic solvants")]<-"aldehyde"
 DATA$AGENT_NAME<-factor(DATA$AGENT_NAME)
+colnames(DATA)[colnames(DATA)=="AGENT_NEW_CATEGORY"]<-"AGENT_CATEGORY"
 DATA$AGENT_CATEGORY[DATA$AGENT_CATEGORY%in%c("Enzymes","enzyme")]<-"enzymes"
-colnames(DATA)[colnames(DATA)=="AGENT_MOLECULAR.WEIGHT"]<-"HMW/LMW"
-colnames(DATA)[colnames(DATA)=="HMW/LMW"]<-"HMW.LMW"
+DATA$AGENT_CATEGORY<-as.factor(DATA$AGENT_CATEGORY)
+DATA$AGENT_CATEGORY<-tolower(DATA$AGENT_CATEGORY)
+colnames(DATA)[colnames(DATA)=="AGENT_MOLECULAR WEIGHT"]<-"HMW.LMW"
 DATA$HMW.LMW<-as.character(DATA$HMW.LMW)
 DATA$HMW.LMW[DATA$HMW.LMW%in%c("unknown")]<-NA
 DATA$HMW.LMW<-factor(DATA$HMW.LMW)
 DATA$SMOKER<-tolower(DATA$SMOKER)
 DATA$SMOKER<-factor(DATA$SMOKER)
+DATA$ASTHMA_PRE<-as.factor(DATA$ASTHMA_PRE)
+colnames(DATA)[colnames(DATA)=="AGE_ASTHMA_ONSET (<12 years, 12-18 years or age)"]<-"AGE_ONSET_CAT"
+DATA$AGE_ONSET_CAT<-as.character(DATA$AGE_ONSET_CAT)
+
+#On impute la valuer d'age 11 pour les individu <12 ans sans specification et 15 pour >12<18 afin de transformer secondairement en variable catégorielle en 3 classes.
+
+DATA$AGE_ONSET_CAT<-ifelse(as.character(DATA$AGE_ONSET_CAT)%in%c("<12","<12 ","<12 years","< 12" ),"11",as.character(DATA$AGE_ONSET_CAT))
+DATA$AGE_ONSET_CAT<-ifelse(as.character(DATA$AGE_ONSET_CAT)%in%c(" 12-18"," 12-18 ","12-18 years","12-18"),"15",as.character(DATA$AGE_ONSET_CAT))
+DATA$AGE_ONSET_CAT<-as.numeric(DATA$AGE_ONSET_CAT)
+DATA$AGE_ONSET_CAT<-cut(DATA$AGE_ONSET_CAT,breaks = c(0,12,19,100),include.lowest = TRUE,labels = c("<12","12-18",">18"))
+
+
 colnames(DATA)[colnames(DATA)=="DELAY_ASTHMA..month."]<-"ASTHMA_DELAY"
 colnames(DATA)[colnames(DATA)=="D_SX_W..month."]<-"ASTHMA_WORK_TIME"
-DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.<-as.character(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.)
-DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.<-ifelse(as.character(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.)%in%c("<12","<12 "),"11",as.character(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.))
-DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.<-ifelse(as.character(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.)%in%c(" 12-18"," 12-18 "),"15",as.character(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.))
-DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.<-as.numeric(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.)
-DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.<-cut(DATA$AGE_ASTHMA_ONSET...12.years..12.18.years.or.age.,breaks = c(0,12,19,100),include.lowest = TRUE,labels = c("<12","12-18",">18"))
-colnames(DATA)[colnames(DATA)=="AGE_ASTHMA_ONSET...12.years..12.18.years.or.age."]<-"AGE_ONSET_CAT"
+
+
+
+
 DATA$LABA_W<-as.character(DATA$LABA_W)
 DATA$LABA_W[DATA$LABA_W%in%c("no ")]<-"no"
 DATA$LABA_W<-factor(DATA$LABA_W)
