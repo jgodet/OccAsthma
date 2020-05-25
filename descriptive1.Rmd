@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r nettoyage des données,include=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 library(readxl)
-DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable"),col_names = TRUE)
+DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable"),col_names = TRUE)
 
 DATAREF<-DATA
 
@@ -117,11 +117,32 @@ DATA$AGE_ONSET_CAT<-ifelse(as.character(DATA$AGE_ONSET_CAT)%in%c(" 12-18"," 12-1
 DATA$AGE_ONSET_CAT<-as.numeric(DATA$AGE_ONSET_CAT)
 DATA$AGE_ONSET_CAT<-cut(DATA$AGE_ONSET_CAT,breaks = c(0,12,19,100),include.lowest = TRUE,labels = c("<12","12-18",">18"))
 
+DATA$ATOPY<-as.factor(DATA$ATOPY)
 
-colnames(DATA)[colnames(DATA)=="DELAY_ASTHMA..month."]<-"ASTHMA_DELAY"
-colnames(DATA)[colnames(DATA)=="D_SX_W..month."]<-"ASTHMA_WORK_TIME"
+colnames(DATA)[colnames(DATA)=="SENSITIZATION TO ASPERGILLUS"]<-"ASPER"
+DATA$ASPER<-tolower(DATA$ASPER)
+DATA$ASPER<-as.factor(DATA$ASPER)
 
+colnames(DATA)[colnames(DATA)=="TOTAL_IGE (KU/l)"]<-"IGET"
+DATA$IGET<-as.factor(DATA$IGET)
+DATA$IGET<-ifelse(as.character(DATA$IGET)%in%c("<2","below detection limit","no"  ),"0",as.character(DATA$IGET))
+DATA$IGET<-as.numeric(DATA$IGET)
 
+colnames(DATA)[colnames(DATA)=="DELAY_ASTHMA (month)"]<-"ASTHMA_DELAY"
+colnames(DATA)[colnames(DATA)=="D_SX_W (month)"]<-"ASTHMA_WORK_TIME"
+DATA$SINUSITIS<-as.factor(DATA$SINUSITIS)
+
+colnames(DATA)[colnames(DATA)=="Gastrooesophageal reflux - PPI Treatment"]<-"GER"
+DATA$GER<-as.factor(DATA$GER)
+DATA$COUGH_W<-as.factor(DATA$COUGH_W)
+DATA$WHEEZING_W<-as.factor(DATA$WHEEZING_W)
+DATA$DYSPNEA_W<-as.factor(DATA$DYSPNEA_W)
+DATA$TIGHTNESS_W<-as.factor(DATA$TIGHTNESS_W)
+DATA$SPUTUM<-as.factor(DATA$SPUTUM)
+DATA$RHINITIS_W<-as.factor(DATA$RHINITIS_W)
+
+DATA$ONSET_OF_RHINITIS_W[DATA$ONSET_OF_RHINITIS_W%in%c("post")]<-"after"
+DATA$ONSET_OF_RHINITIS_W<-as.factor(DATA$ONSET_OF_RHINITIS_W)
 
 
 DATA$LABA_W<-as.character(DATA$LABA_W)
@@ -134,6 +155,7 @@ colnames(DATA)[colnames(DATA)=="OCS_W..Mg.day."]<-"OCS_W_DOSE"
 colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP..month."]<-"TIME_LAST_EXP_M"
 
 #remplacement ","par des "." pour transformer la variable en variable numérique
+
 DATA$TIME_LAST_EXP_M<-str_replace_all(DATA$TIME_LAST_EXP_M,",",".")
 DATA$TIME_LAST_EXP_M<-as.numeric(DATA$TIME_LAST_EXP_M)
 
