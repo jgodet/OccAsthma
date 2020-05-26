@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r nettoyage des données,include=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 library(readxl)
-DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable"),col_names = TRUE)
+DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible"),col_names = TRUE)
 
 DATAREF<-DATA
 
@@ -144,22 +144,26 @@ DATA$RHINITIS_W<-as.factor(DATA$RHINITIS_W)
 DATA$ONSET_OF_RHINITIS_W[DATA$ONSET_OF_RHINITIS_W%in%c("post")]<-"after"
 DATA$ONSET_OF_RHINITIS_W<-as.factor(DATA$ONSET_OF_RHINITIS_W)
 
+DATA$CONJONCT_W<-as.factor(DATA$CONJONCT_W)
+DATA$ECZEMA_W<-as.factor(DATA$ECZEMA_W)
+DATA$URTICARIA_W<-as.factor(DATA$URTICARIA_W)
+DATA$DYSPHONIA_W<-as.factor(DATA$DYSPHONIA_W)
+DATA$PRICK_TEST<-as.factor(DATA$PRICK_TEST)
+DATA$SPECIFIC_IGE<-as.factor(DATA$SPECIFIC_IGE)
+DATA$IgE_MEDIATED_OA<-as.factor(DATA$IgE_MEDIATED_OA)
+DATA$DPEF_W<-as.factor(DATA$DPEF_W)
+DATA[sapply(DATA, is.character)] <- lapply(DATA[sapply(DATA, is.character)],as.factor)
+DATA$DNSBH_W<-as.character(DATA$DNSBH_W)
+DATA$DNSBH_W[DATA$DNSBH_W%in%c("positive")]<-"yes"
+DATA$DNSBH_W<-as.factor(DATA$DNSBH_W)
 
-DATA$LABA_W<-as.character(DATA$LABA_W)
-DATA$LABA_W[DATA$LABA_W%in%c("no ")]<-"no"
-DATA$LABA_W<-factor(DATA$LABA_W)
-colnames(DATA)[colnames(DATA)=="ICS_W_DOSE...Mcg.day."]<-"ICS_W_DOSE"
-colnames(DATA)[colnames(DATA)=="ICS_W_DOSE.GINA"]<-"ICS_W_GINA"
-colnames(DATA)[colnames(DATA)=="LAMA_W..yes.no."]<-"LAMA_W"
-colnames(DATA)[colnames(DATA)=="OCS_W..Mg.day."]<-"OCS_W_DOSE"
-colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP..month."]<-"TIME_LAST_EXP_M"
+colnames(DATA)[colnames(DATA)=="ICS_W_DOSE  (Mcg/day)"]<-"ICS_W_DOSE"
+colnames(DATA)[colnames(DATA)=="ICS_W_DOSE GINA"]<-"ICS_W_GINA"
+colnames(DATA)[colnames(DATA)=="LAMA_W (yes/no)"]<-"LAMA_W"
+colnames(DATA)[colnames(DATA)=="OCS_W (Mg/day)"]<-"OCS_W_DOSE"
+colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP (month)"]<-"TIME_LAST_EXP_M"
 
-#remplacement ","par des "." pour transformer la variable en variable numérique
-
-DATA$TIME_LAST_EXP_M<-str_replace_all(DATA$TIME_LAST_EXP_M,",",".")
-DATA$TIME_LAST_EXP_M<-as.numeric(DATA$TIME_LAST_EXP_M)
-
-colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP...0.1..3days."]<-"TIME_LAST_EXP_D"
+colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP ≤ 0,1 (3days)"]<-"TIME_LAST_EXP_D"
 DATA$TIME_LAST_EXP_D<-as.character(DATA$TIME_LAST_EXP_D)
 DATA$TIME_LAST_EXP_D[DATA$TIME_LAST_EXP_D%in%c("not avalaible")]<-"NA"
 DATA$TIME_LAST_EXP_D<-factor(DATA$TIME_LAST_EXP_D)
