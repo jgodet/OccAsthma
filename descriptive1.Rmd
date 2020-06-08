@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r nettoyage des données,include=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 library(readxl)
-DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible"),col_names = TRUE)
+DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible","not applicable (not removed)","not applicable","Not applicable" ),col_names = TRUE)
 
 DATAREF<-DATA
 
@@ -164,22 +164,27 @@ colnames(DATA)[colnames(DATA)=="OCS_W (Mg/day)"]<-"OCS_W_DOSE"
 colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP (month)"]<-"TIME_LAST_EXP_M"
 
 colnames(DATA)[colnames(DATA)=="TIME_LAST_EXP ≤ 0,1 (3days)"]<-"TIME_LAST_EXP_D"
-DATA$TIME_LAST_EXP_D<-as.character(DATA$TIME_LAST_EXP_D)
-DATA$TIME_LAST_EXP_D[DATA$TIME_LAST_EXP_D%in%c("not avalaible")]<-"NA"
-DATA$TIME_LAST_EXP_D<-factor(DATA$TIME_LAST_EXP_D)
-colnames(DATA)[colnames(DATA)=="ICS_SIC_DOSE..Mcg.day."]<-"ICS_SIC_DOSE"
-colnames(DATA)[colnames(DATA)=="ICS_SIC_DOSE.GINA"]<-"ICS_SIC_GINA"
-DATA$THEO_SIC<-as.character(DATA$THEO_SIC)
-DATA$THEO_SIC[DATA$THEO_SIC%in%c("no ")]<-"no"
-DATA$THEO_SIC<-factor(DATA$THEO_SIC)
-colnames(DATA)[colnames(DATA)=="OCS_SIC_DOSE..Mcg.day."]<-"OCS_SIC_DOSE"
-DATA$AGENT_CATEGORY<-tolower(DATA$AGENT_CATEGORY)
-DATA$AGENT_CATEGORY<-factor(DATA$AGENT_CATEGORY)
-DATA$TIME_LAST_EXP_M<-as.character(DATA$TIME_LAST_EXP_M)
-DATA$TIME_LAST_EXP_M[DATA$TIME_LAST_EXP_M%in%c("not avalaible")]<-"NA"
-DATA$TIME_LAST_EXP_M<-factor(DATA$TIME_LAST_EXP_M)
+
+colnames(DATA)[colnames(DATA)=="ICS_SIC_DOSE (Mcg/day)"]<-"ICS_SIC_DOSE"
+colnames(DATA)[colnames(DATA)=="ICS_SIC_DOSE GINA"]<-"ICS_SIC_GINA"
+
+
+colnames(DATA)[colnames(DATA)=="OCS_SIC (Mg/day)"]<-"OCS_SIC_DOSE"
+colnames(DATA)[colnames(DATA)=="FEV1/FVC"]<-"FEV1_FVC"
+colnames(DATA)[colnames(DATA)=="BASELINE_FEV1<80%"]<-"BASELINE_FEV1_80"
+
 DATA$NSBH_AGENT<-tolower(DATA$NSBH_AGENT)
+DATA$NSBH_METHOD<-tolower(DATA$NSBH_METHOD)
 DATA$NSBH_AGENT<-factor(DATA$NSBH_AGENT)
+DATA$NSBH_METHOD<-factor(DATA$NSBH_METHOD)
+
+DATA$ASTHMA_DIAGNOSIS[DATA$ASTHMA_DIAGNOSIS%in%c("positive")]<-"yes"
+DATA$ASTHMA_DIAGNOSIS[DATA$ASTHMA_DIAGNOSIS%in%c("negative")]<-"no"
+
+DATA$NSBH_RESULT<-as.character(DATA$NSBH_RESULT)
+DATA$NSBH_RESULT[DATA$NSBH_RESULT%in%c("positivie")]<-"positive"
+DATA$NSBH_RESULT<-as.factor(DATA$NSBH_RESULT)
+
 colnames(DATA)[colnames(DATA)=="DUR_EXPO_SIC..minutes."]<-"DUR_EXPO_SIC"
 colnames(DATA)[colnames(DATA)=="CHANGE_NSBH_SIC_BASELINE.24"]<-"NSBH_SIC_RATIO"
 colnames(DATA)[colnames(DATA)=="CHANGE_NSBH..2"]<-"NSBH_SIC_MAX_RATIO"
