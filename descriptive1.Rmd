@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r nettoyage des données,include=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 library(readxl)
-DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible","not applicable (not removed)","not applicable","Not applicable" ),col_names = TRUE)
+DATA<- read_excel(path="EAACI - Occupational Asthma - all databases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible","not applicable (not removed)","not applicable","Not applicable","Not available"),col_names = TRUE)
 
 DATAREF<-DATA
 
@@ -185,28 +185,72 @@ DATA$NSBH_RESULT<-as.character(DATA$NSBH_RESULT)
 DATA$NSBH_RESULT[DATA$NSBH_RESULT%in%c("positivie")]<-"positive"
 DATA$NSBH_RESULT<-as.factor(DATA$NSBH_RESULT)
 
-colnames(DATA)[colnames(DATA)=="DUR_EXPO_SIC..minutes."]<-"DUR_EXPO_SIC"
-colnames(DATA)[colnames(DATA)=="CHANGE_NSBH_SIC_BASELINE.24"]<-"NSBH_SIC_RATIO"
-colnames(DATA)[colnames(DATA)=="CHANGE_NSBH..2"]<-"NSBH_SIC_MAX_RATIO"
-colnames(DATA)[colnames(DATA)=="BLOOD_EOSINO.300.mm³"]<-"BLOOD_EOSINO_300"
-DATA$BLOOD_EOSINO_500<-ifelse(DATA$BLOOD_EOSINO>500,1,0)
-colnames(DATA)[colnames(DATA)==c("NEUTRO_._PRE_SIC")]<-"NEUTRO_PRE_SIC"
-colnames(DATA)[colnames(DATA)==c("NEUTRO_._PRE_SIC.61.")]<-"NEUTRO_PRE_SIC.61"
-colnames(DATA)[colnames(DATA)==c("NEUTRO_._PRE_SIC.76.")]<-"NEUTRO_PRE_SIC.76"
-colnames(DATA)[colnames(DATA)==c("NEUTRO_PRE_SIC..x106.ml.")]<-"NEUTRO_PRE_SIC_CELL"
-colnames(DATA)[colnames(DATA)==c("NEUTRO_._POST_24_SIC")]<-"NEUTRO_POST_SIC"
-colnames(DATA)[colnames(DATA)==c("NEUTRO_POST_24_SIC..x106.ml.")]<-"NEUTRO_POST_SIC_CELL"
-colnames(DATA)[colnames(DATA)==c("EOSINO_._PRE_SIC")]<-"EOSINO_PRE_SIC"
-colnames(DATA)[colnames(DATA)==c("EOSINO_._PRE_SIC.2.2.")]<-"EOSINO_PRE_SIC.2.2"
-colnames(DATA)[colnames(DATA)==c("EOSINO_._PRE_SIC.3.")]<-"EOSINO_PRE_SIC.3"
-colnames(DATA)[colnames(DATA)==c("EOSINO_PRE_SIC..x106.ml.")]<-"EOSINO_PRE_SIC_CELL"
-colnames(DATA)[colnames(DATA)==c("EOSINO_._POST_24_SIC")]<-"EOSINO_POST_SIC"
-colnames(DATA)[colnames(DATA)==c("EOSINO_POST_24_SIC..x106.ml.")]<-"EOSINO_POST_SIC_CELL"
-colnames(DATA)[colnames(DATA)==c("CHANGE_EOSINO_..3.")]<-"CHANGE_EOSINO.3"
-DATA$RESCUE_SABA_SIC<-as.character(DATA$RESCUE_SABA_SIC)
-DATA$RESCUE_SABA_SIC[DATA$RESCUE_SABA_SIC==c("no ")]<-'no'
-DATA$RESCUE_SABA_SIC<-factor(DATA$RESCUE_SABA_SIC)
-DATA$BLOOD_EOSINO_500<-factor(DATA$BLOOD_EOSINO_500)
+colnames(DATA)[colnames(DATA)=="Patterns of reaction"]<-"TYPE_REACTION"
+DATA$TYPE_REACTION<-as.character(DATA$TYPE_REACTION)
+DATA$TYPE_REACTION[DATA$TYPE_REACTION%in%c("early reaction")]<-"isolated early"
+DATA$TYPE_REACTION[DATA$TYPE_REACTION%in%c("late reaction")]<-"isolated late"
+DATA$TYPE_REACTION<-as.factor(DATA$TYPE_REACTION)
+
+
+colnames(DATA)[colnames(DATA)=="DUR_EXPO_SIC (minutes)"]<-"DUR_EXPO_SIC"
+
+colnames(DATA)[colnames(DATA)=="CHANGE_NSBH_SIC_BASELINE/24"]<-"NSBH_SIC_RATIO"
+colnames(DATA)[colnames(DATA)=="CHANGE_NSBH ≥2"]<-"NSBH_SIC_MAX_RATIO"
+colnames(DATA)[colnames(DATA)=="BLOOD_EOSINO≥300/mm³"]<-"BLOOD_EOSINO_300"
+colnames(DATA)[colnames(DATA)=="FENO_PRE_SIC<25"]<-"FENO_PRE_SIC.25"
+colnames(DATA)[colnames(DATA)=="FENO_PRE_SIC_25_50"]<-"FENO_PRE_SIC.25.50"
+colnames(DATA)[colnames(DATA)=="FENO_PRE_SIC_50"]<-"FENO_PRE_SIC.50"
+
+
+
+colnames(DATA)<-gsub("_%_",x=colnames(DATA),"_")
+colnames(DATA)<-gsub("≥",x=colnames(DATA),"_")
+colnames(DATA)<-gsub("%",x=colnames(DATA),"")
+colnames(DATA)<-gsub("__",x=colnames(DATA),"_")
+colnames(DATA)<-gsub("<",x=colnames(DATA),"_")
+colnames(DATA)<-gsub("17,5ppb",x=colnames(DATA),"17.5")
+
+
+colnames(DATA)[colnames(DATA)==c("FENO_PRE_SIC_25_50")]<-"FENO_PRE_SIC_25.50"
+colnames(DATA)[colnames(DATA)==c("FENO_PRE_SIC_50")]<-"FENO_PRE_SIC.50"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_PRE_SIC_61")]<-"NEUTRO_PRE_SIC.61"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_PRE_SIC_76")]<-"NEUTRO_PRE_SIC.76"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_PRE_SIC (x106/ml)")]<-"NEUTRO_PRE_SIC_CELL"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_POST_24_SIC")]<-"NEUTRO_POST_SIC"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_POST_24_SIC (x106/ml)")]<-"NEUTRO_POST_SIC_CELL"
+colnames(DATA)[colnames(DATA)==c("NEUTRO_POST_24_SIC_76")]<-"NEUTRO_POST_SIC.76"
+colnames(DATA)[colnames(DATA)==c("Sutum Pattern PRE_SIC")]<-"SPUTUM_PRE_SIC"
+
+colnames(DATA)[colnames(DATA)==c("EOSINO_PRE_SIC_2,2")]<-"EOSINO_PRE_SIC.2.2"
+colnames(DATA)[colnames(DATA)==c("EOSINO_PRE_SIC_3")]<-"EOSINO_PRE_SIC.3"
+colnames(DATA)[colnames(DATA)==c("EOSINO_PRE_SIC (x106/ml)")]<-"EOSINO_PRE_SIC_CELL"
+colnames(DATA)[colnames(DATA)==c("EOSINO_POST_24_SIC")]<-"EOSINO_POST_SIC"
+colnames(DATA)[colnames(DATA)==c("EOSINO_POST_24_SIC (x106/ml)")]<-"EOSINO_POST_SIC_CELL"
+colnames(DATA)[colnames(DATA)==c("Sputum pattern Post SIC")]<-"SPUTUM_POST_SIC"
+colnames(DATA)[colnames(DATA)==c("EOSINO_POST_24_SIC_3")]<-"EOSINO_POST_SIC.3"
+
+colnames(DATA)[colnames(DATA)==c("CHANGE_EOSINO_3")]<-"CHANGE_EOSINO.3"
+
+colnames(DATA)[colnames(DATA)==c("BLOOD_EOSINO_300/mm³ or FENO _ 50ppb or Eosino _ 3")]<-"T2OR50"
+
+
+DATA$CHANGE_FENO_17.5<-as.character(DATA$CHANGE_FENO_17.5)
+DATA$CHANGE_FENO_17.5[DATA$CHANGE_FENO_17.5==c("n")]<-'no'
+DATA$CHANGE_FENO_17.5<-factor(DATA$CHANGE_FENO_17.5)
+
+DATA$SPUTUM_PRE_SIC<-as.character(DATA$SPUTUM_PRE_SIC)
+DATA$SPUTUM_PRE_SIC[DATA$SPUTUM_PRE_SIC==c("eosiniphilic")]<-'eosinophilic'
+DATA$SPUTUM_PRE_SIC<-factor(DATA$SPUTUM_PRE_SIC)
+
+DATA$SPUTUM_POST_SIC<-as.character(DATA$SPUTUM_POST_SIC)
+DATA$SPUTUM_POST_SIC[DATA$SPUTUM_POST_SIC==c("paucigranolucytic")]<-'paucigranulocytic'
+DATA$SPUTUM_POST_SIC<-factor(DATA$SPUTUM_POST_SIC)
+
+
+DATA$NEUTRO_PRE_SIC_CELL<-as.numeric(DATA$NEUTRO_PRE_SIC_CELL)
+DATA$NEUTRO_POST_SIC_CELL<-as.numeric(DATA$NEUTRO_POST_SIC_CELL)
+DATA$EOSINO_POST_SIC_CELL<-as.numeric(DATA$EOSINO_POST_SIC_CELL)
+
 DATA$STATUS_SIC<-tolower(DATA$STATUS_SIC)
 DATA$STATUS_SIC<-factor(DATA$STATUS_SIC)
 colnames(DATA)<-tolower(colnames(DATA))
@@ -214,138 +258,6 @@ colnames(DATA)<-tolower(colnames(DATA))
 #Traitement de la valeur baseline_nsbh_value
 
 DATA$baseline_nsbh_value<-str_replace_all(DATA$baseline_nsbh_value,",",".")
-
-#introduction d'une nouvelle variable DATA$nsbh_grade selon une hyperréactivité bronchique par méthode, par unité  en severe moyen et absence (cf. tableaux annexe haut poids/bas poids moleculaire)
-DATA$nsbh_grade=NULL
-for (i in 1 :dim(DATA)[1]){
-  if(!is.na(DATA$baseline_nsbh_value[i])){
-  if( substr(DATA$baseline_nsbh_value[i],1,1)=="<"){
-    DATA$nsbh_grade[i]<-"severe"
-  } else  if (substr(DATA$baseline_nsbh_value[i],1,1)==">"){
-    if(substr(DATA$baseline_nsbh_value[i],2,nchar(DATA$baseline_nsbh_value[i]))=="1.6"){
-      if ( DATA$nsbh_method[i]=="Sovijarvi method"){
-        DATA$nsbh_grade[i]<-"absent"
-      }else{DATA$nsbh_grade[i]<-NA}
-    }
-    if(substr(DATA$baseline_nsbh_value[i],2,nchar(DATA$baseline_nsbh_value[i]))=="16"){
-      DATA$nsbh_grade[i]<-"absent"
-    }
-    if(substr(DATA$baseline_nsbh_value[i],2,nchar(DATA$baseline_nsbh_value[i]))=="2.8"){
-    DATA$nsbh_grade[i]<-NA
-    }
-    if(substr(DATA$baseline_nsbh_value[i],2,nchar(DATA$baseline_nsbh_value[i]))=="32"){
-    DATA$nsbh_grade[i]<-"absent"
-    }
-    if(substr(DATA$baseline_nsbh_value[i],2,nchar(DATA$baseline_nsbh_value[i]))=="4.8"){
-      if(DATA$nsbh_method[i]=="Tidal breath method"){
-        DATA$nsbh_grade[i]<-"mild"
-      }else{DATA$nsbh_grade[i]<-"absent"}
-    }
-  } else {
-    if(DATA$nsbh_method[i]=="Tidal breath method"){
-      if(as.numeric(DATA$baseline_nsbh_value[i])<1){
-        DATA$nsbh_grade[i]<-"severe"
-      }
-      if(as.numeric(DATA$baseline_nsbh_value[i])>=1 & as.numeric(DATA$baseline_nsbh_value[i])<=16){
-        DATA$nsbh_grade[i]<-"mild"
-      }
-      if(as.numeric(DATA$baseline_nsbh_value[i])>16){
-        DATA$nsbh_grade[i]<-"absent"
-      }
-    }
-    if(DATA$nsbh_method[i]=="Five breath dosimeter method"){
-      if(DATA$nsbh_unit[i]=="PD20 FEV1 (mg)"){
-        if(as.numeric(DATA$baseline_nsbh_value[i])<0.1){
-          DATA$nsbh_grade[i]<-"severe"
-        }
-        if(as.numeric(DATA$baseline_nsbh_value[i])>=0.1 & as.numeric(DATA$baseline_nsbh_value[i])<=1.5){
-          DATA$nsbh_grade[i]<-"mild"
-        }
-        if(as.numeric(DATA$baseline_nsbh_value[i])>1.5){
-          DATA$nsbh_grade[i]<-"absent"
-        }
-      }else{
-        if(as.numeric(DATA$baseline_nsbh_value[i])<1){
-          DATA$nsbh_grade[i]<-"severe"
-        }
-        if(as.numeric(DATA$baseline_nsbh_value[i])>=1 & as.numeric(DATA$baseline_nsbh_value[i])<=16){
-          DATA$nsbh_grade[i]<-"mild"
-        }
-        if(as.numeric(DATA$baseline_nsbh_value[i])>16){
-          DATA$nsbh_grade[i]<-"absent"
-        }
-      }
-    
-    }
-   if(DATA$nsbh_method[i]=="Sovijarvi method"){
-     if(as.numeric(DATA$baseline_nsbh_value[i])<0.4){
-       DATA$nsbh_grade[i]<-"severe"
-     }
-     if(as.numeric(DATA$baseline_nsbh_value[i])>=0.4 & as.numeric(DATA$baseline_nsbh_value[i])<=1.6){
-       DATA$nsbh_grade[i]<-"mild"
-     }
-     if(as.numeric(DATA$baseline_nsbh_value[i])>1.6){
-       DATA$nsbh_grade[i]<-"mild"
-     }
-   }
-   if(DATA$nsbh_method[i]=="APS dosimeter method"){
-     if(DATA$nsbh_unit[i]=="PD20 FEV1 (mg)"){
-       if(as.numeric(DATA$baseline_nsbh_value[i])<0.1){
-         DATA$nsbh_grade[i]<-"severe"
-       }
-       if(as.numeric(DATA$baseline_nsbh_value[i])>=0.1 & as.numeric(DATA$baseline_nsbh_value[i])<=1.4){
-         DATA$nsbh_grade[i]<-"mild"
-       }
-       if(as.numeric(DATA$baseline_nsbh_value[i])>1.4){
-         DATA$nsbh_grade[i]<-"absent"
-       }
-     }else{
-       if(as.numeric(DATA$baseline_nsbh_value[i])<1){
-         DATA$nsbh_grade[i]<-"severe"
-       }
-       if(as.numeric(DATA$baseline_nsbh_value[i])>=1 & as.numeric(DATA$baseline_nsbh_value[i])<=16){
-         DATA$nsbh_grade[i]<-"mild"
-       }
-       if(as.numeric(DATA$baseline_nsbh_value[i])>16){
-         DATA=nsbh_grade[i]<-"absent"
-       }
-     }
-     }
-  if(DATA$nsbh_method[i]=="Reservoir bag method") {
-    if(as.numeric(DATA$baseline_nsbh_value[i])<0.1){
-      DATA$nsbh_grade[i]<-"severe"
-    }
-    if(as.numeric(DATA$baseline_nsbh_value[i])>=0.1 & as.numeric(DATA$baseline_nsbh_value[i])<=0.3){
-      DATA$nsbh_grade[i]<-"mild"
-    }
-    if(as.numeric(DATA$baseline_nsbh_value[i])>0.3){
-      DATA$nsbh_grade[i]<-"absent"
-    }
-  }  
-  if(DATA$nsbh_method[i]=="Mannitol dosimeter method"){
-    if(as.numeric(DATA$baseline_nsbh_value[i])<=0.025){
-      DATA$nsbh_grade[i]<-"severe"
-    }
-    if(as.numeric(DATA$baseline_nsbh_value[i])>0.025 & as.numeric(DATA$baseline_nsbh_value[i])<=0.635){
-      DATA$nsbh_grade[i]<-"mild"
-    }
-    if(as.numeric(DATA$baseline_nsbh_value[i])>0.635){
-      DATA$nsbh_grade[i]<-"absent"
-    }
-  }
-  if(DATA$nsbh_method[i]=="PEF"|DATA$nsbh_method[i]=="spirometry"){
-    DATA$nsbh_grade[i]<-NA
-  }
-         }
-  
-  }else{
-    DATA$nsbh_grade[i]<-NA
-  }
-}
-
-
-#suppression de l'individu 1199 car anomalie d'import
-DATA<-DATA[-1199,]
 
 
 
