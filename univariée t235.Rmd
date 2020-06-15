@@ -1,0 +1,350 @@
+---
+title: "univarié"
+author: "Nicolas Migueres"
+date: "15/06/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r }
+library(readr)
+data <- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+dataref<-data
+data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
+
+
+
+```
+
+```{r}
+#création de la variable t235 pour un cut off de feNO de 35
+
+
+
+data$t235 <- ifelse(is.na(data$feno_pre_sic) & is.na(data$blood_eosino) & is.na(data$eosino_pre_sic), NA, ifelse(data$feno_pre_sic >= 35 | data$blood_eosino >= 300 | data$eosino_pre_sic >=3, 1, ifelse(data$feno_pre_sic < 35 & data$blood_eosino < 300 & data$eosino_pre_sic < 3, 0, NA)))
+
+
+## Analyse univarié variable t235
+
+#creation fonction pour analyse logistique:
+logNM<-function(a){
+  
+  logistic<-glm(data$t235~a,family=binomial)
+  
+  print(summary(logistic))
+  
+  exp(cbind(Odds_Ration=coef(logistic),confint(logistic)))  
+}
+```
+
+
+
+###log age
+
+```{r}
+logNM(a=data$age)
+         
+```
+
+###logbmi
+
+```{r}
+logNM(data$bmi)
+```
+
+###logsex
+
+```{r}
+logNM(data$sex)
+```
+
+
+###Logeducation
+
+```{r}
+logNM(a=as.factor(data$education))
+```
+
+###LogHMW
+
+```{r}
+logNM(data$hmw.lmw)
+```
+
+###logsmoker
+
+```{r}
+logNM(as.factor(data$smoker))
+```
+
+
+### logasthme préexistant
+
+```{r}
+logNM(data$asthma_pre)
+```
+
+###logAge d'apparition
+
+```{r}
+logNM(as.factor(data$age_onset_cat))
+```
+
+###logatopy
+
+```{r}
+logNM(data$atopy)
+```
+
+
+###logdélai d'apparition symptomes asthme
+
+```{r}
+logNM(data$asthma_delay)
+```
+
+###logdurée de l'exposition avec symptomes
+
+```{r}
+logNM(data$asthma_work_time)
+```
+
+
+###logsinusite
+
+```{r}
+logNM(data$sinusitis)
+```
+
+###logcough
+
+```{r}
+logNM(data$cough_w)
+```
+
+###logwheezzing
+
+```{r}
+
+logNM(data$wheezing_w)
+```
+
+###logDyspnea
+
+```{r}
+logNM(data$dyspnea_w)
+```
+
+
+###logtightness
+
+```{r}
+logNM(data$tightness_w)
+```
+
+
+###logsputum
+
+```{r}
+logNM(data$sputum)
+```
+
+###logrhinitis
+
+```{r}
+logNM(data$rhinitis_w)
+```
+
+###logonselt rhinitis/ creation variable onset_of_rhinitis_w_na
+
+```{r}
+data$onset_of_rhinitis_w_na<-data$onset_of_rhinitis_w
+data$onset_of_rhinitis_w_na[data$onset_of_rhinitis_w%in%c("not applicable")]<-NA
+logNM(data$onset_of_rhinitis_w_na)
+```
+ 
+### logconjoctivite
+ 
+```{r}
+logNM(data$conjonct_w)
+```
+ 
+### log eczema
+ 
+```{r}
+logNM(data$eczema_w)
+```
+ 
+### Log urticaire
+
+```{r}
+logNM(data$urticaria_w) 
+```
+
+
+
+###log dysphonie
+
+```{r}
+logNM(data$dysphonia_w)
+```
+
+###log specific IgE/création variable ige_mediated_oa_na
+
+```{r}
+data$ige_mediated_oa_na<-as.character(data$ige_mediated_oa)
+data$ige_mediated_oa_na[data$ige_mediated_oa_na%in%c("not performed")]<-NA
+data$ige_mediated_oa_na<-factor(data$ige_mediated_oa_na)
+
+logNM(data$ige_mediated_oa_na)
+```
+
+###log SABA_frequence
+
+```{r}
+logNM(data$saba_w_frequency)
+```
+
+###logLABA
+
+```{r}
+logNM(data$laba_w)
+```
+
+### logseverite GINA
+
+```{r}
+logNM(data$ics_w_gina)
+```
+
+###logleukotriène
+
+```{r}
+logNM(data$ltra_w)
+```
+
+###log_lama
+
+```{r}
+logNM(data$lama_w)
+```
+
+
+###logtheophylline
+
+```{r}
+logNM(data$theo_w)
+```
+
+###logcorticoide oraux
+
+```{r}
+
+logNM(data$ocs_w_dose)
+```
+
+###loganti-igE
+
+```{r}
+logNM(data$anti.ige_w)
+```
+
+
+###logmepo
+
+```{r}
+logNM(data$mepo_w)
+```
+
+###logantihist
+
+```{r}
+logNM(data$anti_h1_w)
+```
+
+###logncs
+
+```{r}
+logNM(data$ncs_w)
+```
+
+###logseverite gina
+
+```{r}
+logNM(data$severity_asthma_gina_w)
+```
+
+### logexacerbation
+
+```{r}
+logNM(data$exacerbation_w_nb)
+```
+
+###délai avant test d'expo
+
+```{r}
+logNM(data$time_last_exp_m)
+```
+
+###VEMS
+
+```{r}
+logNM(data$baseline_fev1)
+```
+
+###logtiffeneau
+
+```{r}
+logNM(data$fev1.fvc)
+```
+
+###logobstruction bronchique
+
+```{r}
+logNM(data$airway_obstruction)
+```
+
+###lognsbh
+```{r}
+logNM(data$nsbh_grade)
+```
+
+###logréaction précoce isolée
+```{r}
+logNM(data$only_early)
+```
+
+###réaction mixte
+
+```{r}
+logNM(data$early_late)
+```
+
+###réaction tardive seule
+
+```{r}
+
+logNM(data$only_late)
+```
+
+###logchangement d'hyperréactivité bronchique supérieur à 2
+
+```{r}
+logNM(data$nsbh_sic_max_ratio)
+```
+
+###change FENO 17,5 ppb
+```{r}
+logNM(data$change_feno.17.5ppb)
+```
+
+###log neutro expectoration
+
+```{r}
+logNM(data$neutro_pre_sic.61)
+
+```
+

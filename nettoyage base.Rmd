@@ -252,19 +252,101 @@ DATA$STATUS_SIC<-tolower(DATA$STATUS_SIC)
 DATA$STATUS_SIC<-factor(DATA$STATUS_SIC)
 colnames(DATA)<-tolower(colnames(DATA))
 
+data$nsbh.res<-as.character(data$nsbh.res)
+data$nsbh.res[data$nsbh.res%in%c("severe to moderate")]<-"moderate to severe"
+data$nsbh.res<-as.factor(data$nsbh.res)
+data$nsbh.res<-factor(data$nsbh.res,c("negative","mild","moderate to severe"))
+
+data$only_late<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$early_reaction[i]) | is.na(data$late_reaction[i])) {
+    data$only_late[i] <- NA
+  }
+  
+  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & data$early_reaction[i]=="no" & data$late_reaction[i]=="yes"){
+    data$only_late[i] <- "yes"
+  }
+  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & (data$early_reaction[i]!="no" | data$late_reaction[i]!="yes")){
+    data$only_late[i] <- "no"
+  }
+}
+
+data$early_late<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$early_reaction[i]) | is.na(data$late_reaction[i])) {
+    data$early_late[i] <- NA
+  }
+  
+  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & data$early_reaction[i]=="yes" & data$late_reaction[i]=="yes"){
+    data$early_late[i] <- "yes"
+  }
+  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & (data$early_reaction[i]=="no" | data$late_reaction[i]=="no")){
+    data$early_late[i] <- "no"
+  }
+}
+
+data$pre_eosino<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$eosino_pre_sic.3[i]) | is.na(data$neutro_pre_sic.61[i])) {
+    data$pre_eosino[i] <- NA
+  }
+  
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & data$eosino_pre_sic.3[i]=="yes" & data$neutro_pre_sic.61[i]=="no"){
+    data$pre_eosino[i] <- "yes"
+  }
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & (data$eosino_pre_sic.3[i]!="yes" | data$neutro_pre_sic.61[i]!="no")){
+    data$pre_eosino[i] <- "no"
+  }
+}
+
+data$pre_neutro<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$neutro_pre_sic.61[i])|is.na(data$eosino_pre_sic.3[i])){
+    data$pre_neutro[i]<-NA
+  }
+  if((!is.na(data$neutro_pre_sic.61[i]) & !is.na(data$eosino_pre_sic.3[i])) & (data$neutro_pre_sic.61[i]=="yes" & data$eosino_pre_sic.3[i]=="no")){
+    data$pre_neutro[i]<-"yes"
+  }
+  if((!is.na(data$neutro_pre_sic.61[i]) & !is.na(data$eosino_pre_sic.3[i])) & (data$neutro_pre_sic.61[i]!="yes" & data$eosino_pre_sic.3[i]!="no")){
+    data$pre_neutro[i]<-"no"
+}
+}
+
+data$pre_mixte<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$eosino_pre_sic.3[i]) | is.na(data$neutro_pre_sic.61[i])) {
+    data$pre_mixed[i] <- NA
+  }
+  
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & data$eosino_pre_sic.3[i]=="yes" & data$neutro_pre_sic.61[i]=="yes"){
+    data$pre_mixed[i] <- "yes"
+  }
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & (data$eosino_pre_sic.3[i]!="yes" | data$neutro_pre_sic.61[i]!="yes")){
+    data$pre_mixed[i] <- "no"
+  }
+}
+
+data$pre_pauci<-NULL
+for(i in 1:dim(data)[1]){
+  if(is.na(data$eosino_pre_sic.3[i]) | is.na(data$neutro_pre_sic.61[i])) {
+    data$pre_pauci[i] <- NA
+  }
+  
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & data$eosino_pre_sic.3[i]=="no" & data$neutro_pre_sic.61[i]=="no"){
+    data$pre_pauci[i] <- "yes"
+  }
+  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & (data$eosino_pre_sic.3[i]!="no" | data$neutro_pre_sic.61[i]!="no")){
+    data$pre_pauci[i] <- "no"
+  }
+}
+
 write.table(x = DATA, file = "DATAclean2.csv", sep = ";", row.names = FALSE)
-
-#Traitement de la valeur baseline_nsbh_value
-
-DATA$baseline_nsbh_value<-str_replace_all(DATA$baseline_nsbh_value,",",".")
-
-
 
 ```
 
 ## Description des données manquantes
 ```{r,(echo=FALSE)}
-(sapply(DATA,function(x) sum(is.na(x))))*100/1198
+(sapply(DATA,function(x) sum(is.na(x))))*100/1518
 
 
 missmap(DATA, main = "Missing values vs observed")
