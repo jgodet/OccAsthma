@@ -165,6 +165,17 @@ legend("topright",legend =c("HMW","LMW"),col=wes_palette(n=3,name = "GrandBudape
 chisq.test(tabw)
 ```
 
+###Présence d'un RGO
+
+```{r}
+summary(data$ger)
+tabger<-table(data$ger,data$t235)
+tabger
+cprop(tabger)
+barplotNM(a=cprop(tabger)[1:2,1:3],b="RGO selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
+chisq.test(tabger)
+```
+
 
 ### Presence d'IgE specifique ou prick test
 
@@ -176,6 +187,19 @@ data$ige_mediated_oa<-factor(data$ige_mediated_oa)
 cprop(tabige)
 barplotNM(a=cprop(tabige)[1:2,1:3],b="IgE spe ou prick selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
 chisq.test(tabige)
+```
+
+
+###Ige Totale selon le phénotype
+
+```{r}
+by(data$iget,data$t235,summary)
+var.test(data$iget[data$t235==1],data$iget[data$t235==0])
+t.test(data$iget[data$t235==1],data$iget[data$t235==0],na.rm=TRUE,var.equal = FALSE)
+boxplot(data$age~data$t235,col=wes_palette(n=2,name = "GrandBudapest1"),ylab = "IgE totale U/l",xlab = "statut T2",axes=FALSE, main=("IgE tot et phénotype"))
+axis(side=1,at=c(1,2),labels =c("noT2","T2") )
+legend("topright",legend = c("noT2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
+axis(side=2)
 ```
 
 
@@ -491,6 +515,24 @@ cprop(tabgin)
 barplotNM(a=cprop(tabgin)[1:4,1:3],b="stade de severite selon le GINA",c=4,d=60,e=c(3,8,13),f=c("severe","modere","leger","non traite"))
 chisq.test(tabgin)
 ```
+###sévérité step
+
+```{r}
+
+
+summary(data$severity_asthma_step_w)
+tabsev<-table(data$severity_asthma_step_w,data$t235)
+cprop(tabsev)
+g<-cprop(tabsev)[1:6,1:2]
+colnames(g)<-rep("",2)
+barplot(g,beside=TRUE,xlab="phenotype",ylab = " sévérité", main="sévérité selon le phénotype",axes=FALSE,ylim =c(0,80),col=wes_palette(n=6,name = "BottleRocket1"))
+axis(side=1,at=c(3,9),labels =c("noT2","T2") )
+axis(side=2)
+legend("topright",legend = c("step 0", "step 1", "step 2", "step 3", "step 4", "step 5"),col=wes_palette(n=6,name = "BottleRocket1"),lty = 1)
+
+```
+
+
 
 ###exacerbation
 
@@ -662,7 +704,7 @@ tabtype<-table(data$type_reaction,data$t235)
 tabtype
 cprop(tabtype)
 
-barplotNM(a=cprop(tabtype)[1:4,1:3],b="nombre de reaction tardive selon le phenotype",c=4,d=80,e=c(2,5,8),f=c("no reaction","isolated early","isolated late","dual"))
+barplotNM(a=cprop(tabtype)[1:4,1:3],b="nombre de reaction tardive selon le phenotype",c=4,d=80,e=c(3,8,13),f=c("no reaction","isolated early","isolated late","dual"))
 chisq.test(tablat)
 ```
 
@@ -819,8 +861,8 @@ t.test(data$change_neutro[data$t235==0],data$change_neutro[data$t235==1],var.equ
 ###changement de FeNO pendant le SIC
 
 ```{r}
-summary(data$change_feno.17.5ppb)
-tabfeno<-table(data$change_feno.17.5ppb,data$t235)
+summary(data$change_feno.17.5)
+tabfeno<-table(data$change_feno_17.5,data$t235)
 tabfeno
 cprop(tabfeno)
 barplotNM(a=cprop(tabfeno)[1:2,1:3],b="changement de FeNO sup ou egal à 17.5% selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
@@ -946,6 +988,12 @@ chisq.test(tabprepauci)
 
 ## Analyse descriptive selon hmw.lmw
 
+
+```{r}
+#délimitation de la population étudié à celle étudée antérieurement
+vect<-which(data$t235!=is.na(data$t235))
+data2<-data[vect,]
+```
 
 ### age
 
