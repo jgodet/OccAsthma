@@ -161,9 +161,8 @@ logNM(data$rhinitis_w)
 ###logonselt rhinitis/ creation variable onset_of_rhinitis_w_na
 
 ```{r}
-data$onset_of_rhinitis_w_na<-data$onset_of_rhinitis_w
-data$onset_of_rhinitis_w_na[data$onset_of_rhinitis_w%in%c("not applicable")]<-NA
-logNM(data$onset_of_rhinitis_w_na)
+
+logNM(data$onset_of_rhinitis_w)
 ```
  
 ### logconjoctivite
@@ -246,18 +245,6 @@ logNM(data$theo_w)
 logNM(data$ocs_w_dose)
 ```
 
-###loganti-igE
-
-```{r}
-logNM(data$anti.ige_w)
-```
-
-
-###logmepo
-
-```{r}
-logNM(data$mepo_w)
-```
 
 ###logantihist
 
@@ -275,12 +262,13 @@ logNM(data$ncs_w)
 
 ```{r}
 logNM(data$severity_asthma_gina_w)
+logNM(data$severity_asthma_step_w)
 ```
 
 ### logexacerbation
 
 ```{r}
-logNM(data$exacerbation_w_nb)
+logNM(data$exa_2)
 ```
 
 ###délai avant test d'expo
@@ -298,7 +286,7 @@ logNM(data$baseline_fev1)
 ###logtiffeneau
 
 ```{r}
-logNM(data$fev1.fvc)
+logNM(data$fev1_fvc)
 ```
 
 ###logobstruction bronchique
@@ -309,7 +297,7 @@ logNM(data$airway_obstruction)
 
 ###lognsbh
 ```{r}
-logNM(data$nsbh_grade)
+logNM(data$nsbh.res)
 ```
 
 ###logréaction précoce isolée
@@ -335,10 +323,16 @@ logNM(data$only_late)
 ```{r}
 logNM(data$nsbh_sic_max_ratio)
 ```
+###Séverité ATS
+```{r}
+logNM(data$severity_ats)
+```
+
+
 
 ###change FENO 17,5 ppb
 ```{r}
-logNM(data$change_feno.17.5ppb)
+logNM(data$change_feno)
 ```
 
 ###log neutro expectoration

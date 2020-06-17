@@ -1,5 +1,5 @@
 ---
-title: "descriptive variable T2 critère FeNO 35"
+title: "analyse descriptibe variable T2 critère FeNO 35"
 author: "Nicolas Migueres"
 date: "10/06/2020"
 output:
@@ -7,7 +7,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
@@ -31,7 +31,7 @@ library("lmtest")
 library("tidyr")
 library("naniar")
 
-data <- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+data <- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
 dataref<-data
 data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
 
@@ -46,11 +46,13 @@ data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.f
 
 data$t235 <- ifelse(is.na(data$feno_pre_sic) & is.na(data$blood_eosino) & is.na(data$eosino_pre_sic), NA, ifelse(data$feno_pre_sic >= 35 | data$blood_eosino >= 300 | data$eosino_pre_sic >=3, 1, ifelse(data$feno_pre_sic < 35 & data$blood_eosino < 300 & data$eosino_pre_sic < 3, 0, NA)))
 
-summary$t235
+table(data$t235)
 
 
 ```
-
+```{r}
+varshort<-names(data)[!names(data)%in%c("t235","gina 4-5","poor sx control","exacerbation_w","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value" )]
+```
 
 ```{r}
 require(tableone)
@@ -220,6 +222,14 @@ data$ige_mediated_oa<-factor(data$ige_mediated_oa)
 cprop(tabige)
 barplotNM(a=cprop(tabige)[1:2,1:3],b="IgE spe ou prick selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
 chisq.test(tabige)
+```
+### sensibilisation à aspergillus selon le phénotype
+```{r}
+tabasper<-table(data$asper,data$t235)
+tabasper
+cprop(tabasper)
+barplotNM(a=cprop(tabasper)[1:2,1:3],b=("Relation entre le phenotype et la sensibilisation à aspergillus"),c=2,d=100,e=(c(2,5,8)),f=(c("non","oui")))
+fisher.test(tabasper)
 ```
 
 
@@ -407,7 +417,7 @@ summary(data$age_onset_cat)
 tabonset<-table(data$age_onset_cat,data$t235)
 tabonset
 cprop(tabonset)
-barplotNM(a=cprop(tabonset)[1:3,1:3],b="age d'apparition de l'asthme selon le phenotype",c=3,d=130,e=c(4,7,10),f=c("<12 and","12-18 ans",">18 ans"))
+barplotNM(a=cprop(tabonset)[1:3,1:3],b="age d'apparition de l'asthme selon le phenotype",c=3,d=130,e=c(2,6,10),f=c("<12 and","12-18 ans",">18 ans"))
 
 chisq.test(tabonset)
 fisher.test(tabonset)
@@ -462,6 +472,25 @@ chisq.test(tabsa)
 fisher.test(tabsa)
 
 ```
+
+###utilisation des SABA
+```{r}
+summary(data$saba_w_frequency)
+data$saba_w_frequency<-factor(data$saba_w_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
+tabsa<-table(data$saba_w_frequency,data$t235)
+tabsa
+cprop(tabsa)
+g<-cprop(tabsa)[1:5,1:3]
+colnames(g)<-rep("",3)
+barplot(g,beside=TRUE,xlab="phenotype",ylab = " utilisation de SABA", main="utilisation de SABA selon le phenotype",axes=FALSE,ylim =c(0,80),col=wes_palette(n=5,name = "BottleRocket1"))
+axis(side=1,at=c(3,9,15),labels =c("noT2","T2","ensemble") )
+axis(side=2)
+legend("topright",legend = c(">3 fois par jours","1 à 2 fois par jours","2 fois ou plus par semaines","une fois par semaine ou moins","jamais"),col=wes_palette(n=5,name = "BottleRocket1"),lty = 1)
+
+chisq.test(tabsa)
+
+```
+
 
 ###utilisation des ICS
 
@@ -891,23 +920,8 @@ barplotNM(a=cprop(tabcheo)[1:2,1:3],b="changement d'Eo dans les expecto sup ou e
 ###profil d'inflammation pre SIC eosinophilique pur (cut off neutro à 61)
 
 ```{r}
-#creation de la variable par boucle for
-data$pre_eosino<-NULL
-for(i in 1:dim(data)[1]){
-  if(is.na(data$eosino_pre_sic.3[i]) | is.na(data$neutro_pre_sic.61[i])) {
-    data$pre_eosino[i] <- NA
-  }
-  
-  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & data$eosino_pre_sic.3[i]=="yes" & data$neutro_pre_sic.61[i]=="no"){
-    data$pre_eosino[i] <- "yes"
-  }
-  if( (!is.na(data$eosino_pre_sic.3[i]) & !is.na(data$neutro_pre_sic.61[i])) & (data$eosino_pre_sic.3[i]!="yes" | data$neutro_pre_sic.61[i]!="no")){
-    data$pre_eosino[i] <- "no"
-  }
-}
-data$pre_eosino<-factor(data$pre_eosino)
-#analyse descriptive
-tabpreo<-table(data$pre_eosino,data$t235)
+
+tabpreo<-table(data$pre.eosino.76,data$t235)
 tabpreo
 cprop(tabpreo)
 barplotNM(a =cprop(tabpreo)[1:2,1:3],b="profil sputum pre sic eosino strict par phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui","ensemble") )
@@ -915,16 +929,16 @@ chisq.test(tabpreo)
 
 ```
 
-###profil neutro pre sic (cut off 61)
+###profil neutro pre sic (cut off 76)
 
 ```{r}
-#création de la variable
+
 
 #descriptif
-tabpreneu<-table(data$pre_neutro,data$t235)
+tabpreneu<-table(data$pre_neutro.76,data$t235)
 tabpreneu
 cprop(tabpreneu)
-by(data$pre_neutro,data$t235,summary)
+by(data$pre_neutro.76,data$t235,summary)
 barplotNM(a=cprop(tabpreneu)[1:2,1:3],b="profil sputum neutro strict selon le phenotype",c=2,d=130,e=c(2,5,8),f=c("non","yes"))
 chisq.test(tabpreneu)
 ```
@@ -932,12 +946,10 @@ chisq.test(tabpreneu)
 ###profil mixed granulocytic
 
 ```{r}
-#creation de la variable par boucle for
 
-#descriptif
-tabpremix<-table(data$pre_mixed,data$t235)
-by(data$pre_mixed,data$t235,table)
-data$pre_mixed<-factor(data$pre_mixed)
+tabpremix<-table(data$pre_mixed.76,data$t235)
+by(data$pre_mixed.76,data$t235,table)
+data$pre_mixed.76<-factor(data$pre_mixed.76)
 cprop(tabpremix)
 barplotNM(a=cprop(tabpremix)[1:2,1:3],b="profil sputum mixed granulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
 chisq.test(tabpremix)
@@ -947,8 +959,8 @@ chisq.test(tabpremix)
 
 ```{r}
 
-tabprepauci<-table(data$pre_pauci,data$t235)
-by(data$pre_pauci,data$t235,summary)
+tabprepauci<-table(data$pre_pauci.76,data$t235)
+by(data$pre_pauci.76,data$t235,summary)
 cprop(tabprepauci)
 barplotNM(a=cprop(tabprepauci)[1:2,1:3],b="profil sputum paucigranulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
 chisq.test(tabprepauci)
@@ -956,31 +968,10 @@ chisq.test(tabprepauci)
 ```
 
 
-```{r}
-varshort<-names(data)[!names(data)%in%c("t235","gina 4-5","poor sx control","exa_2","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","type_reaction","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value" )]
-```
-
-
-```{r}
-require(tableone)
- tabOneT2 <- CreateTableOne(vars =varshort,data =data,strata = "t235", addOverall = T)
-  p3 <- print(tabOneT2,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
-
-kable(p3[,1:4], booktabs = T,format = "html") %>%
-  row_spec(0,bold=TRUE) %>%
-   row_spec(1, hline_after = T) %>%
-   row_spec(dim(p3)[1],hline_after = T) %>%
-   kable_styling(latex_options = c("striped","HOLD_position","scale_down"),
-                 stripe_color = "oldlace",
-                 full_width = F) %>%
-  add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
-```
 
 
 
-```{r}
-r2hu(data,fileOut ="")
-```
+
 
 
 
