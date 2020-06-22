@@ -381,7 +381,7 @@ for(i in 1:dim(DATA)[1]){
   }
 }
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
-DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 50 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 50 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
+DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
 
 DATA2<-DATA[!is.na(DATA$t235),]
 

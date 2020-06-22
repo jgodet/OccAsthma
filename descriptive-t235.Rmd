@@ -5,17 +5,15 @@ date: "10/06/2020"
 output:
   html_document:
     df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+always_allow_html: yes
 ---
 
 ```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r }
 library(readr)
@@ -40,11 +38,6 @@ data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.f
 ```
 
 ```{r}
-#création de la variable T2 pour un cut off de feNO de 35
-
-
-
-data$t235 <- ifelse(is.na(data$feno_pre_sic) & is.na(data$blood_eosino) & is.na(data$eosino_pre_sic), NA, ifelse(data$feno_pre_sic >= 35 | data$blood_eosino >= 300 | data$eosino_pre_sic >=3, 1, ifelse(data$feno_pre_sic < 35 & data$blood_eosino < 300 & data$eosino_pre_sic < 3, 0, NA)))
 
 table(data$t235)
 
@@ -59,7 +52,7 @@ require(tableone)
  tabOneT2 <- CreateTableOne(vars =varshort,data =data,strata = "t235", addOverall = T)
   p3 <- print(tabOneT2,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
 
-kable(p3[,1:4], booktabs = T,format = "html") %>%
+kable(p3[,1:4], booktabs = T) %>%
   row_spec(0,bold=TRUE) %>%
    row_spec(1, hline_after = T) %>%
    row_spec(dim(p3)[1],hline_after = T) %>%
@@ -70,7 +63,7 @@ kable(p3[,1:4], booktabs = T,format = "html") %>%
 ```
 
 ```{r}
-(sapply(data,function(x) sum(is.na(x))))*100/1518
+(sapply(data,function(x) sum(is.na(x))))*100/695
 missmap(data, main = "Missing values vs observed")
 ```
 
@@ -473,24 +466,6 @@ fisher.test(tabsa)
 
 ```
 
-###utilisation des SABA
-```{r}
-summary(data$saba_w_frequency)
-data$saba_w_frequency<-factor(data$saba_w_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
-tabsa<-table(data$saba_w_frequency,data$t235)
-tabsa
-cprop(tabsa)
-g<-cprop(tabsa)[1:5,1:3]
-colnames(g)<-rep("",3)
-barplot(g,beside=TRUE,xlab="phenotype",ylab = " utilisation de SABA", main="utilisation de SABA selon le phenotype",axes=FALSE,ylim =c(0,80),col=wes_palette(n=5,name = "BottleRocket1"))
-axis(side=1,at=c(3,9,15),labels =c("noT2","T2","ensemble") )
-axis(side=2)
-legend("topright",legend = c(">3 fois par jours","1 à 2 fois par jours","2 fois ou plus par semaines","une fois par semaine ou moins","jamais"),col=wes_palette(n=5,name = "BottleRocket1"),lty = 1)
-
-chisq.test(tabsa)
-
-```
-
 
 ###utilisation des ICS
 
@@ -763,7 +738,7 @@ tabtype<-table(data$type_reaction,data$t235)
 tabtype
 cprop(tabtype)
 
-barplotNM(a=cprop(tabtype)[1:4,1:3],b="nombre de reaction tardive selon le phenotype",c=4,d=80,e=c(3,8,13),f=c("no reaction","isolated early","isolated late","dual"))
+barplotNM(a=cprop(tabtype)[1:4,1:3],b="type de réaction selon le phenotype",c=4,d=80,e=c(3,8,13),f=c("no reaction","isolated early","isolated late","dual"))
 chisq.test(tablat)
 ```
 
