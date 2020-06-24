@@ -131,8 +131,12 @@ DATA$IGET<-ifelse(as.character(DATA$IGET)%in%c("<2","below detection limit","no"
 DATA$IGET<-as.numeric(DATA$IGET)
 
 DATA$SABA_W_FREQUENCY<-as.character(DATA$SABA_W_FREQUENCY)
-DATA$SABA_W_FREQUENCY[DATA$SABA_W_FREQUENCY%in%c("≥3 times a day")]<-"3 times a day or more"
+DATA$SABA_W_FREQUENCY[DATA$SABA_W_FREQUENCY%in%c("≥3 times a day","?3 times a day")]<-"3 times a day or more"
 DATA$SABA_W_FREQUENCY<-as.factor(DATA$SABA_W_FREQUENCY)
+
+DATA$SABA_SIC_FREQUENCY<-as.character(DATA$SABA_SIC_FREQUENCY)
+DATA$SABA_SIC_FREQUENCY[DATA$SABA_SIC_FREQUENCY%in%c("≥3 times a day","?3 times a day")]<-"3 times a day or more"
+DATA$SABA_SIC_FREQUENCY<-as.factor(DATA$SABA_SIC_FREQUENCY)
 
 
 DATA$ASPER<-as.character(DATA$ASPER)
@@ -383,13 +387,26 @@ for(i in 1:dim(DATA)[1]){
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
 DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
 
+
+###création nouvelle variable t250: critère T2 pour eo sang 400, feno 50 et eo crachat 3
+
+DATA$t250 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 50 | DATA$blood_eosino >= 400 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 50 & DATA$blood_eosino < 400 & DATA$eosino_pre_sic < 3, 0, NA)))
+
+
+DATA$rhinitis_onset<-ifelse(test = DATA$onset_of_rhinitis_w=="before","before","not before")
+
+DATA$blood_eosino_400<-ifelse(DATA$blood_eosino>=400,"yes","no")
+table(DATA$blood_eosino_400)
+
 DATA2<-DATA[!is.na(DATA$t235),]
+
+DATA3<-DATA[!is.na(DATA$t250),]
 
 write.table(x = DATA, file = "DATAclean2.csv", sep = ";", row.names = FALSE)
 
 write.table(x = DATA2, file = "DATAshort.csv", sep = ";", row.names = FALSE)
 
-
+write.table(x = DATA3, file = "DATAshort50.csv", sep = ";", row.names = FALSE)
 
 ```
 

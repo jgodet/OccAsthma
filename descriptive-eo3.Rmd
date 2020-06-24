@@ -1,14 +1,10 @@
 ---
-title: "analyse descriptibe variable T2 critère FeNO 35"
+title: "descriptive-sputum"
 author: "Nicolas Migueres"
-date: "10/06/2020"
-output:
-  html_document:
-    df_print: paged
-  pdf_document:
-    latex_engine: xelatex
-always_allow_html: yes
+date: "24/06/2020"
+output: html_document
 ---
+#analyse avec pour critère discriminant le seuil de 3% d'eosinophilie dans les crachats induits.
 
 ```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -29,9 +25,9 @@ library("lmtest")
 library("tidyr")
 library("naniar")
 
-data <- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
-dataref<-data
-data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
+dtf <- read_delim("DATAshort.3.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+dtfref<-dtf
+dtf[sapply(dtf, is.character)] <- lapply(dtf[sapply(dtf, is.character)],as.factor)
 
 
 
@@ -39,17 +35,17 @@ data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.f
 
 ```{r}
 
-table(data$t235)
+table(dtf$eosino_pre_sic.3)
 
 
 ```
 ```{r}
-varshort<-names(data)[!names(data)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value" )]
+varshort<-names(dtf)[!names(dtf)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3" )]
 ```
 
 ```{r}
 require(tableone)
- tabOneT2 <- CreateTableOne(vars =varshort,data =data,strata = "t235", addOverall = T)
+ tabOneT2 <- CreateTableOne(vars =varshort,data =dtf,strata = "eosino_pre_sic.3", addOverall = T)
   p3 <- print(tabOneT2,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
 
 kable(p3[,1:4], booktabs = T) %>%
@@ -63,8 +59,8 @@ kable(p3[,1:4], booktabs = T) %>%
 ```
 
 ```{r}
-(sapply(data,function(x) sum(is.na(x))))*100/695
-missmap(data, main = "Missing values vs observed")
+(sapply(dtf,function(x) sum(is.na(x))))*100/879
+missmap(dtf, main = "Missing values vs observed")
 ```
 
 
@@ -86,10 +82,10 @@ barplotNM<-function(a,b,c,d,e,f){
 ### age
 
 ```{r}
-by(data$age,data$t235,summary)
-var.test(data$age[data$t235==1],data$age[data$t235==0])
-t.test(data$age[data$t235==1],data$age[data$t235==0],na.rm=TRUE,var.equal = TRUE)
-boxplot(data$age~data$t235,col=wes_palette(n=2,name = "GrandBudapest1"),ylab = "age",xlab = "statut T2",axes=FALSE, main=("age selon le phenotype"))
+by(dtf$age,dtf$eosino_pre_sic.3,summary)
+var.test(dtf$age[dtf$eosino_pre_sic.3=="yes"],dtf$age[dtf$eosino_pre_sic.3=="no"])
+t.test(dtf$age[dtf$eosino_pre_sic.3=="yes"],dtf$age[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE,var.equal = TRUE)
+boxplot(dtf$age~dtf$eosino_pre_sic.3,col=wes_palette(n=2,name = "GrandBudapest1"),ylab = "age",xlab = "statut T2",axes=FALSE, main=("age selon le phenotype"))
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("noT2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
@@ -98,9 +94,9 @@ axis(side=2)
 ### Sex
 
 ```{r}
-data$sex<-factor(data$sex)
-by(data$sex,data$t235,table)
-tab<-table(data$sex,data$t235)
+dtf$sex<-factor(dtf$sex)
+by(dtf$sex,dtf$eosino_pre_sic.3,table)
+tab<-table(dtf$sex,dtf$eosino_pre_sic.3)
 cprop(tab)
 chisq.test(tab)
 b<-cprop(tab)[1:2,1:3]
@@ -115,23 +111,21 @@ legend("topright",legend = c("femme","homme"),col=wes_palette(n=2,name = "GrandB
 ### IMC
 
 ```{r}
-by(data$bmi,data$t235,summary)
-boxplot(data$bmi~data$t235,xlab = "phenotype",ylab = 'bmi en kg/m2',main="Repartition BMI selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
+by(dtf$bmi,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$bmi~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = 'bmi en kg/m2',main="Repartition BMI selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-var.test(data$bmi[data$t235==1],data$bmi[data$t235==0])
-var(data$bmi[data$t235==1],na.rm=TRUE)
-var(data$bmi[data$t235==0],na.rm=TRUE)
-t.test(data$bmi[data$t235==1],data$bmi[data$t235==0],na.rm=TRUE,var.equal = TRUE)
-t.test(data$bmi[data$t235==1],data$bmi[data$t235==0],na.rm=TRUE,var.equal = FALSE)
+var.test(dtf$bmi[dtf$eosino_pre_sic.3=="yes"],dtf$bmi[dtf$eosino_pre_sic.3=="no"])
+t.test(dtf$bmi[dtf$eosino_pre_sic.3=="yes"],dtf$bmi[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE,var.equal = TRUE)
+t.test(dtf$bmi[dtf$eosino_pre_sic.3=="yes"],dtf$bmi[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE,var.equal = FALSE)
 
 ```
 
 ### Tabagisme
 
 ```{r}
-tabsm<-table(data$smoker,data$t235)
+tabsm<-table(dtf$smoker,dtf$eosino_pre_sic.3)
 cprop(tabsm)
 c<-cprop(tabsm)[1:3,1:3]
 colnames(c)<-rep("",3)
@@ -146,8 +140,8 @@ chisq.test(tabsm)
 ### Niveau d'éducation
 
 ```{r}
-data$education<-factor(data$education,c("primary","secondary","post-secondary"))
-tabe<-table(data$education,data$t235)
+dtf$education<-factor(dtf$education,c("primary","secondary","post-secondary"))
+tabe<-table(dtf$education,dtf$eosino_pre_sic.3)
 d<-cprop(tabe)[1:3,1:3]
 colnames(d)<-rep("",3)
 barplot(d,beside=TRUE,xlab = "phenotype",ylab = "pourcentage",main="niveau d'education selon le phenotype",col=wes_palette(n=3,name = "GrandBudapest1"),axes = FALSE,xlim=c(0,15),ylim=c(0,100))
@@ -163,7 +157,7 @@ fisher.test(tabe)
 ### Atopie
 
 ```{r}
-taba<-table(data$atopy,data$t235)
+taba<-table(dtf$atopy,dtf$eosino_pre_sic.3)
 taba
 cprop(taba)
 e<-(cprop(taba)[1:2,1:3])
@@ -181,7 +175,7 @@ chisq.test(taba)
 
 
 ```{r}
-tabw<-table(data$hmw.lmw,data$t235)
+tabw<-table(dtf$hmw.lmw,dtf$eosino_pre_sic.3)
 tabw
 cprop(tabw)
 f<-cprop(tabw)[1:2,1:3]
@@ -196,8 +190,8 @@ chisq.test(tabw)
 ###Présence d'un RGO
 
 ```{r}
-summary(data$ger)
-tabger<-table(data$ger,data$t235)
+summary(dtf$ger)
+tabger<-table(dtf$ger,dtf$eosino_pre_sic.3)
 tabger
 cprop(tabger)
 barplotNM(a=cprop(tabger)[1:2,1:3],b="RGO selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -208,17 +202,17 @@ chisq.test(tabger)
 ### Presence d'IgE specifique ou prick test
 
 ```{r}
-data$ige_mediated_oa<-as.character(data$ige_mediated_oa)
-tabige<-table((data$ige_mediated_oa[data$ige_mediated_oa!="not performed"]),data$t235[data$ige_mediated_oa!="not performed"])
+dtf$ige_mediated_oa<-as.character(dtf$ige_mediated_oa)
+tabige<-table((dtf$ige_mediated_oa[dtf$ige_mediated_oa!="not performed"]),dtf$eosino_pre_sic.3[dtf$ige_mediated_oa!="not performed"])
 tabige
-data$ige_mediated_oa<-factor(data$ige_mediated_oa)
+dtf$ige_mediated_oa<-factor(dtf$ige_mediated_oa)
 cprop(tabige)
 barplotNM(a=cprop(tabige)[1:2,1:3],b="IgE spe ou prick selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
 chisq.test(tabige)
 ```
 ### sensibilisation à aspergillus selon le phénotype
 ```{r}
-tabasper<-table(data$asper,data$t235)
+tabasper<-table(dtf$asper,dtf$eosino_pre_sic.3)
 tabasper
 cprop(tabasper)
 barplotNM(a=cprop(tabasper)[1:2,1:3],b=("Relation entre le phenotype et la sensibilisation à aspergillus"),c=2,d=100,e=(c(2,5,8)),f=(c("non","oui")))
@@ -229,10 +223,10 @@ fisher.test(tabasper)
 ###Ige Totale selon le phénotype
 
 ```{r}
-by(data$iget,data$t235,summary)
-var.test(data$iget[data$t235==1],data$iget[data$t235==0])
-t.test(data$iget[data$t235==1],data$iget[data$t235==0],na.rm=TRUE,var.equal = FALSE)
-boxplot(data$age~data$t235,col=wes_palette(n=2,name = "GrandBudapest1"),ylab = "IgE totale U/l",xlab = "statut T2",axes=FALSE, main=("IgE tot et phénotype"))
+by(dtf$iget,dtf$eosino_pre_sic.3,summary)
+var.test(dtf$iget[dtf$eosino_pre_sic.3=="yes"],dtf$iget[dtf$eosino_pre_sic.3=="no"])
+t.test(dtf$iget[dtf$eosino_pre_sic.3=="yes"],dtf$iget[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE,var.equal = FALSE)
+boxplot(dtf$age~dtf$eosino_pre_sic.3,col=wes_palette(n=2,name = "GrandBudapest1"),ylab = "IgE totale U/l",xlab = "statut T2",axes=FALSE, main=("IgE tot et phénotype"))
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("noT2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
@@ -242,7 +236,7 @@ axis(side=2)
 ### Présence d'un asthme antérieur
 
 ```{r}
-tabpre<-table(data$asthma_pre,data$t235)
+tabpre<-table(dtf$asthma_pre,dtf$eosino_pre_sic.3)
 tabpre
 cprop(tabpre)
 barplotNM(a=cprop(tabpre)[1:2,1:3],b=("Relation entre le phenotype et la preexistance d'un asthme"),c=2,d=100,e=(c(2,5,8)),f=(c("non","oui")))
@@ -252,7 +246,7 @@ chisq.test(tabpre)
 ### Nature de l'agent par catégorie
 
 ```{r}
-tabcat<-table(data$agent_category,data$t235)
+tabcat<-table(dtf$agent_category,dtf$eosino_pre_sic.3)
 tabcat
 lprop(tabcat)
 ```
@@ -260,7 +254,7 @@ lprop(tabcat)
 ### Toux
 
 ```{r}
-tabcw<-table(data$cough_w,data$t235)
+tabcw<-table(dtf$cough_w,dtf$eosino_pre_sic.3)
 tabcw
 cprop(tabcw)
 barplotNM(a=cprop(tabcw)[1:2,1:3],b="phenotype et toux",c=2,d=110,e=c(2,5,8),f=c("non","oui"))
@@ -271,7 +265,7 @@ chisq.test(tabcw)
 ### Présence de sifflement
 
 ```{r}
-tabww<-table(data$wheezing_w,data$t235)
+tabww<-table(dtf$wheezing_w,dtf$eosino_pre_sic.3)
 tabww
 cprop(tabww)
 barplotNM(a=cprop(tabww)[1:2,1:3],b="sifflement et phenotype",c=2,d=100,e=c(2,5,8),f=c("non","oui"))
@@ -281,7 +275,7 @@ chisq.test(tabww)
 ### Dyspnée
 
 ```{r}
-tabdw<-table(data$dyspnea_w,data$t235)
+tabdw<-table(dtf$dyspnea_w,dtf$eosino_pre_sic.3)
 tabdw
 cprop(tabdw)
 barplotNM(a=cprop(tabdw)[1:2,1:3],b="dyspnee et phenotype",c=2,d=120,e=c(2,5,8),f=c("non","oui"))
@@ -291,7 +285,7 @@ chisq.test(tabdw)
 ###Serrement
 
 ```{r}
-tabtw<-table(data$tightness_w,data$t235)
+tabtw<-table(dtf$tightness_w,dtf$eosino_pre_sic.3)
 tabtw
 cprop(tabtw)
 barplotNM(a=cprop(tabtw)[1:2,1:3],b="serrement et phenotype",c=2,d=100,e=c(2,5,8),f=c("non","yes"))
@@ -301,7 +295,7 @@ chisq.test(tabtw)
 ###Crachat
 
 ```{r}
-tabspw<-table(data$sputum,data$t235)
+tabspw<-table(dtf$sputum,dtf$eosino_pre_sic.3)
 tabspw
 cprop(tabspw)
 barplotNM(a=cprop(tabspw)[1:2,1:3],b="crachat au travail selon le phenotype",c=2,d=100,e=c(2,5,8),f=c("no","yes"))
@@ -311,7 +305,7 @@ chisq.test(tabspw)
 ###Rhinite
 
 ```{r}
-tabrw<-table(data$rhinitis_w,data$t235)
+tabrw<-table(dtf$rhinitis_w,dtf$eosino_pre_sic.3)
 tabrw
 cprop(tabrw)
 barplotNM(a=cprop(tabrw)[1:2,1:3],b="rhinite au travail selon le phenotype",c=2,d=100,e=c(2,5,8),f=c("non","oui"))
@@ -321,10 +315,10 @@ chisq.test(tabrw)
 ###Debut rhinite
 
 ```{r}
-data$onset_of_rhinitis_w<-as.character(data$onset_of_rhinitis_w)
-taborw<-taborw<-table((data$onset_of_rhinitis_w[data$onset_of_rhinitis_w!="not applicable"]),data$t235[data$onset_of_rhinitis_w!="not applicable"])
+dtf$onset_of_rhinitis_w<-as.character(dtf$onset_of_rhinitis_w)
+taborw<-taborw<-table((dtf$onset_of_rhinitis_w[dtf$onset_of_rhinitis_w!="not applicable"]),dtf$eosino_pre_sic.3[dtf$onset_of_rhinitis_w!="not applicable"])
 taborw
-data$onset_of_rhinitis_w<-factor(data$onset_of_rhinitis_w)
+dtf$onset_of_rhinitis_w<-factor(dtf$onset_of_rhinitis_w)
 cprop(taborw)
 barplotNM(a = cprop(taborw)[1:3,1:3],b= "apparition rhinite au travail selon le phenotype",c=3,d=80,e=c(4,7,10),f=c("after","at the same time","before") )
 chisq.test(taborw)
@@ -335,7 +329,7 @@ fisher.test(taborw)
 ###conjonctivite
 
 ```{r}
-tab2<-table(data$conjonct_w,data$t235)
+tab2<-table(dtf$conjonct_w,dtf$eosino_pre_sic.3)
 cprop(tab2)
 barplotNM(a =cprop(tab2)[1:2,1:3],b="conjonctivite au travail selon le phenotype",c=2,d=80,e= c(2,5,8),f=c("non","oui"))
 chisq.test(tab2)
@@ -345,7 +339,7 @@ chisq.test(tab2)
 ###eczema
 
 ```{r}
-tabec<-table(data$eczema_w,data$t235)
+tabec<-table(dtf$eczema_w,dtf$eosino_pre_sic.3)
 tabec
 cprop(tabec)
 barplotNM(a =cprop(tabec)[1:2,1:3],b="eczema au travail selon le phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui") )
@@ -355,7 +349,7 @@ chisq.test(tabec)
 ###urticaire
 
 ```{r}
-taburt<-table(data$urticaria_w,data$t235)
+taburt<-table(dtf$urticaria_w,dtf$eosino_pre_sic.3)
 taburt
 cprop(taburt)
 barplotNM(a=cprop(taburt)[1:2,1:3],b="urticaire au travail selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -365,7 +359,7 @@ chisq.test(taburt)
 ###Dysphonie
 
 ```{r}
-tabdys<-table(data$dysphonia_w,data$t235)
+tabdys<-table(dtf$dysphonia_w,dtf$eosino_pre_sic.3)
 tabdys
 cprop(tabdys)
 barplotNM(a=cprop(tabdys)[1:2,1:3],b="dysphonie au travail selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -375,7 +369,7 @@ chisq.test(tabdys)
 ###Sinusite
 
 ```{r}
-tabsin<-table(data$sinusitis,data$t235)
+tabsin<-table(dtf$sinusitis,dtf$eosino_pre_sic.3)
 tabsin
 cprop(tabsin)
 barplotNM(a=cprop(tabsin)[1:2,1:3],b="sinusite selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -387,27 +381,27 @@ chisq.test(tabsin)
 ###Délai d'apparition de l'asthme
 
 ```{r}
-by(data$asthma_delay,data$t235,summary)
-boxplot(data$asthma_delay~data$t235,ylab = "delai d'apparition de l'asthme en mois",xlab = "phenotype",main="delai d'apparition de l'asthme selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE)
+by(dtf$asthma_delay,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$asthma_delay~dtf$eosino_pre_sic.3,ylab = "delai d'apparition de l'asthme en mois",xlab = "phenotype",main="delai d'apparition de l'asthme selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
 #verification de l normalite de distribution des populations
-hist(data$asthma_delay[data$t235==0])
-qqnorm(data$asthma_delay[data$t235==0])
-shapiro.test(data$asthma_delay[data$t235==0])
+hist(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"])
+qqnorm(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"])
+shapiro.test(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"])
 #recherche de normalite apres transformation logarythmique
-hist(log(data$asthma_delay[data$t235==0]))
+hist(log(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"]))
 #recherche d'egalite des variances
-var.test(data$asthma_delay[data$t235==0],data$asthma_delay[data$t235==1])
-wilcox.test(data$asthma_delay[data$t235==0],data$asthma_delay[data$t235==1],var.equal = TRUE,na.rm=TRUE)
+var.test(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"],dtf$asthma_delay[dtf$eosino_pre_sic.3=="yes"])
+wilcox.test(dtf$asthma_delay[dtf$eosino_pre_sic.3=="no"],dtf$asthma_delay[dtf$eosino_pre_sic.3=="yes"],var.equal = TRUE,na.rm=TRUE)
 ```
 
 ###Age d'apparition de l'asthme
 
 ```{r}
-summary(data$age_onset_cat)
-tabonset<-table(data$age_onset_cat,data$t235)
+summary(dtf$age_onset_cat)
+tabonset<-table(dtf$age_onset_cat,dtf$eosino_pre_sic.3)
 tabonset
 cprop(tabonset)
 barplotNM(a=cprop(tabonset)[1:3,1:3],b="age d'apparition de l'asthme selon le phenotype",c=3,d=130,e=c(2,6,10),f=c("<12 and","12-18 ans",">18 ans"))
@@ -420,42 +414,41 @@ fisher.test(tabonset)
 ###Durée des symptomes au travail en mois
 
 ```{r}
-summary(data$asthma_work_time)
-hist(data$asthma_work_time[data$t235==1],breaks = 300)
-by(data$asthma_work_time,data$t235,summary)
-boxplot(data$asthma_work_time~data$t235,xlab = "phenotype",ylab = "temps de travail avec symptomes en mois",main="temps de travail avec symptomes selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE)
+summary(dtf$asthma_work_time)
+hist(dtf$asthma_work_time[dtf$eosino_pre_sic.3=="yes"],breaks = 300)
+by(dtf$asthma_work_time,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$asthma_work_time~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "temps de travail avec symptomes en mois",main="temps de travail avec symptomes selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-var.test(data$asthma_work_time[data$t235==0],data$asthma_work_time[data$t235==1])
-t.test(data$asthma_work_time[data$t235==0],data$asthma_work_time[data$t235==1],var.equal = FALSE,na.rm=TRUE)
-t.test(data$asthma_work_time[data$t235==0],data$asthma_work_time[data$t235==1],var.equal = TRUE,na.rm=TRUE)
-wilcox.test(data$asthma_work_time[data$t235==0],data$asthma_work_time[data$t235==1],na.rm=TRUE)
+var.test(dtf$asthma_work_time[dtf$eosino_pre_sic.3=="no"],dtf$asthma_work_time[dtf$eosino_pre_sic.3=="yes"])
+t.test(dtf$asthma_work_time[dtf$eosino_pre_sic.3=="no"],dtf$asthma_work_time[dtf$eosino_pre_sic.3=="yes"],var.equal = FALSE,na.rm=TRUE)
+t.test(dtf$asthma_work_time[dtf$eosino_pre_sic.3=="no"],dtf$asthma_work_time[dtf$eosino_pre_sic.3=="yes"],var.equal = TRUE,na.rm=TRUE)
 
 ```
 
 ###délai depuis la dernière exposition
 
 ```{r}
-summary(data$time_last_exp_m)
-data$time_last_exp_m<-as.numeric(data$time_last_exp_m)
-by(data$time_last_exp_m,data$t235,summary)
-hist(data$time_last_exp_m[data$t235==0],breaks=100)
-boxplot(data$time_last_exp_m~data$t235,xlab="phenotype",ylab="nombre de mois depuis la dernière exposition",main="rapport entre le phenotype et la derniere exposition",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,120))
+summary(dtf$time_last_exp_m)
+dtf$time_last_exp_m<-as.numeric(dtf$time_last_exp_m)
+by(dtf$time_last_exp_m,dtf$eosino_pre_sic.3,summary)
+hist(dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="no"],breaks=100)
+boxplot(dtf$time_last_exp_m~dtf$eosino_pre_sic.3,xlab="phenotype",ylab="nombre de mois depuis la dernière exposition",main="rapport entre le phenotype et la derniere exposition",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,120))
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-var.test(data$time_last_exp_m[data$t235==1],data$time_last_exp_m[data$t235==0])
-t.test(data$time_last_exp_m[data$t235==1],data$time_last_exp_m[data$t235==0],var.equal = TRUE,na.rm=TRUE)
-wilcox.test(data$time_last_exp_m[data$t235==1],data$time_last_exp_m[data$t235==0],na.rm=TRUE)
+var.test(dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="yes"],dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="no"])
+t.test(dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="yes"],dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="no"],var.equal = TRUE,na.rm=TRUE)
+wilcox.test(dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="yes"],dtf$time_last_exp_m[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE)
 ```
 
 ###utilisation des SABA
 
 ```{r}
-summary(data$saba_w_frequency)
-data$saba_w_frequency<-factor(data$saba_w_frequency,c("?3 times a day","1 or 2 times a day","2 or more times a week","once or less per week","never"))
-tabsa<-table(data$saba_w_frequency,data$t235)
+summary(dtf$saba_w_frequency)
+dtf$saba_w_frequency<-factor(dtf$saba_w_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
+tabsa<-table(dtf$saba_w_frequency,dtf$eosino_pre_sic.3)
 tabsa
 cprop(tabsa)
 
@@ -470,9 +463,9 @@ fisher.test(tabsa)
 ###utilisation des ICS
 
 ```{r}
-summary(data$ics_w_gina)
-data$ics_w_gina<-factor(data$ics_w_gina,c("high","medium","low","no ICS"))
-tabics<-table(data$ics_w_gina,data$t235)
+summary(dtf$ics_w_gina)
+dtf$ics_w_gina<-factor(dtf$ics_w_gina,c("high","medium","low","no ics"))
+tabics<-table(dtf$ics_w_gina,dtf$eosino_pre_sic.3)
 tabics
 cprop(tabics)
 barplotNM(a=cprop(tabics)[1:4,1:3],b="utilisation des ICS selon le phenotype",c=4,d=80,e=c(3,8,13),f=c("haut","moyen","bas","pas de CSI"))
@@ -482,8 +475,8 @@ chisq.test(tabics)
 ###utilisation des laba
 
 ```{r}
-summary(data$laba_w)
-tabala<-table(data$laba_w,data$t235)
+summary(dtf$laba_w)
+tabala<-table(dtf$laba_w,dtf$eosino_pre_sic.3)
 tabala
 cprop(tabala)
 barplotNM(a=cprop(tabala)[1:2,1:3],b="utilisation de laba selon le phenotype",c=2,d=80,e=c(2,5,8),f=c("non","oui"))
@@ -493,8 +486,8 @@ chisq.test(tabala)
 ###utilisation des leukotriène
 
 ```{r}
-summary(data$ltra_w)
-tabltra<-table(data$ltra_w,data$t235)
+summary(dtf$ltra_w)
+tabltra<-table(dtf$ltra_w,dtf$eosino_pre_sic.3)
 tabltra
 cprop(tabltra)
 barplotNM(a=cprop(tabltra)[1:2,1:3],b="utilisation de leucotriene selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("non","oui"))
@@ -504,11 +497,11 @@ chisq.test(tabltra)
 ###corticoide oraux
 
 ```{r}
-summary(data$ocs_w)
+summary(dtf$ocs_w)
 #transformation en variable dichotomique:
-data$ocs_w_nb<-ifelse(data$ocs_w_dose==0,"no","yes")
-table(data$ocs_w_nb)
-tabocs<-table(data$ocs_w_nb,data$t235)
+dtf$ocs_w_nb<-ifelse(dtf$ocs_w_dose==0,"no","yes")
+table(dtf$ocs_w_nb)
+tabocs<-table(dtf$ocs_w_nb,dtf$eosino_pre_sic.3)
 cprop(tabocs)
 tabocs
 barplotNM(a=cprop(tabocs)[1:2,1:3],b="utilisation de CSO selon le phenotype",c=2,d=125,e=c(2,5,8),f=c("non","oui"))
@@ -519,8 +512,8 @@ fisher.test(tabocs)
 ###anti-histaminique
 
 ```{r}
-summary(data$anti_h1_w)
-tabhist<-table(data$anti_h1_w,data$t235)
+summary(dtf$anti_h1_w)
+tabhist<-table(dtf$anti_h1_w,dtf$eosino_pre_sic.3)
 tabhist
 cprop(tabhist)
 barplotNM(a=cprop(tabhist)[1:2,1:3],b="utilisation d'anti-histaminique selon le phenotype",c=2,d=100,e=c(2,5,8),f=c("non","oui"))
@@ -530,8 +523,8 @@ chisq.test(tabhist)
 ###corticoide nasaux
 
 ```{r}
-summary(data$ncs_w)
-tabncs<-table(data$ncs_w,data$t235)
+summary(dtf$ncs_w)
+tabncs<-table(dtf$ncs_w,dtf$eosino_pre_sic.3)
 tabncs
 cprop(tabncs)
 barplotNM(a=cprop(tabncs)[1:2,1:3],b="utilisation d'anti-histaminique nasaux selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -541,9 +534,9 @@ chisq.test(tabncs)
 ###sévérite GINA
 
 ```{r}
-summary(data$severity_asthma_gina_w)
-data$severity_asthma_gina_w<-factor(data$severity_asthma_gina_w,c("severe","moderate","mild","no treatment"))
-tabgin<-table(data$severity_asthma_gina_w,data$t235)
+summary(dtf$severity_asthma_gina_w)
+dtf$severity_asthma_gina_w<-factor(dtf$severity_asthma_gina_w,c("severe","moderate","mild","no treatment"))
+tabgin<-table(dtf$severity_asthma_gina_w,dtf$eosino_pre_sic.3)
 tabgin
 cprop(tabgin)
 barplotNM(a=cprop(tabgin)[1:4,1:3],b="stade de severite selon le GINA",c=4,d=60,e=c(3,8,13),f=c("severe","modere","leger","non traite"))
@@ -554,8 +547,8 @@ chisq.test(tabgin)
 ```{r}
 
 
-summary(data$severity_asthma_step_w)
-tabsev<-table(data$severity_asthma_step_w,data$t235)
+summary(dtf$severity_asthma_step_w)
+tabsev<-table(dtf$severity_asthma_step_w,dtf$eosino_pre_sic.3)
 cprop(tabsev)
 g<-cprop(tabsev)[1:6,1:2]
 colnames(g)<-rep("",2)
@@ -563,6 +556,7 @@ barplot(g,beside=TRUE,xlab="phenotype",ylab = " sévérité", main="sévérité 
 axis(side=1,at=c(3,9),labels =c("noT2","T2") )
 axis(side=2)
 legend("topright",legend = c("step 0", "step 1", "step 2", "step 3", "step 4", "step 5"),col=wes_palette(n=6,name = "BottleRocket1"),lty = 1)
+fisher.test(tabsev)
 
 ```
 
@@ -571,12 +565,12 @@ legend("topright",legend = c("step 0", "step 1", "step 2", "step 3", "step 4", "
 ###exacerbation
 
 ```{r}
-summary(data$exacerbation_w)
+summary(dtf$exacerbation_w)
 #transformation en variable dichotomique (plus d'une exacerbation ou pas)
-data$exacerbation_w_nb<-ifelse(data$exacerbation_w==0,"no","yes")
-data$exacerbation_w_nb<-factor(data$exacerbation_w_nb)
-summary(data$exacerbation_w_nb)
-tabex<-table(data$exacerbation_w_nb,data$t235)
+dtf$exacerbation_w_nb<-ifelse(dtf$exacerbation_w==0,"no","yes")
+dtf$exacerbation_w_nb<-factor(dtf$exacerbation_w_nb)
+summary(dtf$exacerbation_w_nb)
+tabex<-table(dtf$exacerbation_w_nb,dtf$eosino_pre_sic.3)
 tabex
 cprop(tabex)
 barplotNM(a=cprop(tabex)[1:2,1:3],b="exacerbation l'année precedente selon le phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui"))
@@ -586,21 +580,21 @@ chisq.test(tabex)
 ###non control selon le GINA (création nouvelle variable: non controlé si au moins une exacerbation sévère ou plus de 2 utilisation de SABA par semaine)
 
 ```{r}
-data$uncontrolled_gina_w<-NULL
-for(i in 1:dim(data)[1]){
-  if(is.na(data$asthma_control_w[i]) | is.na(data$exacerbation_w_nb[i])) {
-    data$uncontrolled_gina_w[i] <- NA
+dtf$uncontrolled_gina_w<-NULL
+for(i in 1:dim(dtf)[1]){
+  if(is.na(dtf$asthma_control_w[i]) | is.na(dtf$exacerbation_w_nb[i])) {
+    dtf$uncontrolled_gina_w[i] <- NA
   }
   
-  if( (!is.na(data$asthma_control_w[i]) & !is.na(data$exacerbation_w_nb[i])) & data$asthma_control_w[i]=="asthma controlled" & data$exacerbation_w_nb[i]=="no"){
-    data$uncontrolled_gina_w[i] <- "no"
+  if( (!is.na(dtf$asthma_control_w[i]) & !is.na(dtf$exacerbation_w_nb[i])) & dtf$asthma_control_w[i]=="asthma controlled" & dtf$exacerbation_w_nb[i]=="no"){
+    dtf$uncontrolled_gina_w[i] <- "no"
   }
-  if( (!is.na(data$asthma_control_w[i]) & !is.na(data$exacerbation_w_nb[i])) & (data$asthma_control_w[i]=="asthma uncontrolled" | data$exacerbation_w_nb[i]=="yes")){
-    data$uncontrolled_gina_w[i] <- "yes"
+  if( (!is.na(dtf$asthma_control_w[i]) & !is.na(dtf$exacerbation_w_nb[i])) & (dtf$asthma_control_w[i]=="asthma uncontrolled" | dtf$exacerbation_w_nb[i]=="yes")){
+    dtf$uncontrolled_gina_w[i] <- "yes"
   }
 }
 
-tabcont<-table(data$uncontrolled_gina_w,data$t235)
+tabcont<-table(dtf$uncontrolled_gina_w,dtf$eosino_pre_sic.3)
 tabcont
 cprop(tabcont)
 barplotNM(a=cprop(tabcont)[1:2,1:3],b="asthme non controlé",c=2,d=110,e=c(2,5,8),f=c("non","oui"))
@@ -612,24 +606,24 @@ chisq.test(tabcont)
 ###VEMS
 
 ```{r}
-summary(data$baseline_fev1)
-by(data$baseline_fev1,data$t235,summary)
-boxplot(data$baseline_fev1~data$t235,xlab = "phenotype",ylab = "VEMS de base",main="VEMS selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,180))
+summary(dtf$baseline_fev1)
+by(dtf$baseline_fev1,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$baseline_fev1~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "VEMS de base",main="VEMS selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,180))
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-hist(data$baseline_fev1[data$t235==1],breaks=200)
-hist(data$baseline_fev1[data$t235==0],breaks=200)
-var.test(data$baseline_fev1[data$t235==0],data$baseline_fev1[data$t235==1])
-t.test(data$baseline_fev1[data$t235==0],data$baseline_fev1[data$t235==1],var.equal = TRUE,na.rm=TRUE)
+hist(dtf$baseline_fev1[dtf$eosino_pre_sic.3=="yes"],breaks=200)
+hist(dtf$baseline_fev1[dtf$eosino_pre_sic.3=="no"],breaks=200)
+var.test(dtf$baseline_fev1[dtf$eosino_pre_sic.3=="no"],dtf$baseline_fev1[dtf$eosino_pre_sic.3=="yes"])
+t.test(dtf$baseline_fev1[dtf$eosino_pre_sic.3=="no"],dtf$baseline_fev1[dtf$eosino_pre_sic.3=="yes"],var.equal = TRUE,na.rm=TRUE)
 ```
 
 ###VEMS<80%
 
 ```{r}
-data$baseline_fev1_80<-as.factor(data$baseline_fev1_80)
-summary(data$baseline_fev1_80)
-tabfev<-table(data$baseline_fev1_80,data$t235)
+dtf$baseline_fev1_80<-as.factor(dtf$baseline_fev1_80)
+summary(dtf$baseline_fev1_80)
+tabfev<-table(dtf$baseline_fev1_80,dtf$eosino_pre_sic.3)
 tabfev
 cprop(tabfev)
 barplotNM(a =cprop(tabfev)[1:2,1:3],b=" VEMS<80% selon le phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui"))
@@ -639,24 +633,24 @@ chisq.test(tabfev)
 ###Tiffeneau
 
 ```{r}
-summary(data$fev1_fvc)
-by(data$fev1_fvc,data$t235,summary)
-boxplot(data$fev1_fvc~data$t235,xlab = "phenotype",ylab = "coefficient de Tiffeneau",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
+summary(dtf$fev1_fvc)
+by(dtf$fev1_fvc,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$fev1_fvc~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "coefficient de Tiffeneau",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-hist(data$fev1_fvc[data$t235==1],breaks = 300)
-hist(data$fev1_fvc[data$t235==0],breaks = 300)
-qqnorm(data$fev1_fvc[data$t235==1])
-var.test(data$fev1_fvc[data$t235==1],data$fev1_fvc[data$t235==0])
-t.test(data$fev1_fvc[data$t235==1],data$fev1_fvc[data$t235==0],na.rm=TRUE)
+hist(dtf$fev1_fvc[dtf$eosino_pre_sic.3=="yes"],breaks = 300)
+hist(dtf$fev1_fvc[dtf$eosino_pre_sic.3=="no"],breaks = 300)
+qqnorm(dtf$fev1_fvc[dtf$eosino_pre_sic.3=="yes"])
+var.test(dtf$fev1_fvc[dtf$eosino_pre_sic.3=="yes"],dtf$fev1_fvc[dtf$eosino_pre_sic.3=="no"])
+t.test(dtf$fev1_fvc[dtf$eosino_pre_sic.3=="yes"],dtf$fev1_fvc[dtf$eosino_pre_sic.3=="no"],na.rm=TRUE)
 ```
 
 ###Trouble Ventilatoire obstructif
 
 ```{r}
-summary(data$airway_obstruction)
-tabobs<-table(data$airway_obstruction,data$t235)
+summary(dtf$airway_obstruction)
+tabobs<-table(dtf$airway_obstruction,dtf$eosino_pre_sic.3)
 tabobs
 cprop(tabobs)
 barplotNM(a=cprop(tabobs)[1:2,1:3],b="obstruction bronchique selon phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -665,12 +659,12 @@ chisq.test(tabobs)
 
 ###niveau d'hyper-réactivité bronchique selon le phenotype
 ```{r}
-data$nsbh.res<-as.character(data$nsbh.res)
-data$nsbh.res[data$nsbh.res%in%c("severe to moderate")]<-"moderate to severe"
-data$nsbh.res<-as.factor(data$nsbh.res)
-data$nsbh.res<-factor(data$nsbh.res,c("negative","mild","moderate to severe"))
-table(data$nsbh.res)
-tabgrad<-table(data$nsbh.res,data$t235)
+dtf$nsbh.res<-as.character(dtf$nsbh.res)
+dtf$nsbh.res[dtf$nsbh.res%in%c("severe to moderate")]<-"moderate to severe"
+dtf$nsbh.res<-as.factor(dtf$nsbh.res)
+dtf$nsbh.res<-factor(dtf$nsbh.res,c("negative","mild","moderate to severe"))
+table(dtf$nsbh.res)
+tabgrad<-table(dtf$nsbh.res,dtf$eosino_pre_sic.3)
 tabgrad
 cprop(tabgrad)
 barplotNM(a=cprop(tabgrad)[1:3,1:3],b="niveau d'HRB selon le phénotype",c=3,d=80,e=c(2,6,10),f=c("absent","léger","modéré à sévère"))
@@ -682,23 +676,23 @@ chisq.test(tabgrad)
 ###Changement Hyper-reactivite bronchique 
 
 ```{r}
-summary(data$nsbh_sic_ratio)
-by(data$nsbh_sic_ratio,data$t235,summary)
-boxplot(data$nsbh_sic_ratio~data$t235,xlab = "phenotype",ylab = "ratio de test d'hyperreactivite bronchique",main="ratio de test d'hyperreactivite bronchique selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
+summary(dtf$nsbh_sic_ratio)
+by(dtf$nsbh_sic_ratio,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$nsbh_sic_ratio~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "ratio de test d'hyperreactivite bronchique",main="ratio de test d'hyperreactivite bronchique selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-hist(data$nsbh_sic_ratio[data$t235==1],breaks = 400)
-hist(data$nsbh_sic_ratio[data$t235==0],breaks = 400)
-var.test(data$nsbh_sic_ratio[data$t235==1],data$nsbh_sic_ratio[data$t235==0])
-wilcox.test(data$nsbh_sic_ratio[data$t235==1],data$nsbh_sic_ratio[data$t235==0])
+hist(dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="yes"],breaks = 400)
+hist(dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="no"],breaks = 400)
+var.test(dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="yes"],dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="no"])
+wilcox.test(dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="yes"],dtf$nsbh_sic_ratio[dtf$eosino_pre_sic.3=="no"])
 ```
 
 ###Ratio d'HRB>2
 
 ```{r}
-summary(data$nsbh_sic_max_ratio)
-tabrat<-table(data$nsbh_sic_max_ratio,data$t235)
+summary(dtf$nsbh_sic_max_ratio)
+tabrat<-table(dtf$nsbh_sic_max_ratio,dtf$eosino_pre_sic.3)
 tabrat
 cprop(tabrat)
 barplotNM(a=cprop(tabrat)[1:2,1:3],b="taux de ration d'hyper reactivite bronchique superieur a 2 et phenotype",c=2,d=75,e=c(2,5,8),f=c("non","oui"))
@@ -709,8 +703,8 @@ chisq.test(tabrat)
 ###Reponse immediate
 
 ```{r}
-summary(data$early_reaction)
-tabear<-table(data$early_reaction,data$t235)
+summary(dtf$early_reaction)
+tabear<-table(dtf$early_reaction,dtf$eosino_pre_sic.3)
 tabear
 cprop(tabear)
 barplotNM(a=cprop(tabear)[1:2,1:3],b="nombre de reaction precoce selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -721,8 +715,8 @@ chisq.test(tabear)
 
 
 ```{r}
-summary(data$late_reaction)
-tablat<-table(data$late_reaction,data$t235)
+summary(dtf$late_reaction)
+tablat<-table(dtf$late_reaction,dtf$eosino_pre_sic.3)
 tablat
 cprop(tablat)
 barplotNM(a=cprop(tablat)[1:2,1:3],b="nombre de reaction tardive selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
@@ -732,9 +726,9 @@ chisq.test(tablat)
 
 ###type de réaction
 ```{r}
-data$type_reaction<-factor(data$type_reaction,c("no reaction","isolated early","isolated late","dual"))
-summary(data$type_reaction)
-tabtype<-table(data$type_reaction,data$t235)
+dtf$type_reaction<-factor(dtf$type_reaction,c("no reaction","isolated early","isolated late","dual"))
+summary(dtf$type_reaction)
+tabtype<-table(dtf$type_reaction,dtf$eosino_pre_sic.3)
 tabtype
 cprop(tabtype)
 
@@ -747,25 +741,25 @@ chisq.test(tablat)
 
 ```{r}
 #creation de la variable d'interet avec une boucle for
-data$only_early<-NULL
-for(i in 1:dim(data)[1]){
-  if(is.na(data$early_reaction[i]) & is.na(data$late_reaction[i])) {
-    data$only_early[i] <- NA
+dtf$only_early<-NULL
+for(i in 1:dim(dtf)[1]){
+  if(is.na(dtf$early_reaction[i]) & is.na(dtf$late_reaction[i])) {
+    dtf$only_early[i] <- NA
   }
-  if(is.na(data$early_reaction[i]) | is.na(data$late_reaction[i])) {
-    data$only_early[i] <- NA
+  if(is.na(dtf$early_reaction[i]) | is.na(dtf$late_reaction[i])) {
+    dtf$only_early[i] <- NA
   }
-  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & data$early_reaction[i]=="yes" & data$late_reaction[i]=="no"){
-    data$only_early[i] <- "yes"
+  if( (!is.na(dtf$early_reaction[i]) & !is.na(dtf$late_reaction[i])) & dtf$early_reaction[i]=="yes" & dtf$late_reaction[i]=="no"){
+    dtf$only_early[i] <- "yes"
   }
-  if( (!is.na(data$early_reaction[i]) & !is.na(data$late_reaction[i])) & (data$early_reaction[i]!="yes" | data$late_reaction[i]!="no")){
-    data$only_early[i] <- "no"
+  if( (!is.na(dtf$early_reaction[i]) & !is.na(dtf$late_reaction[i])) & (dtf$early_reaction[i]!="yes" | dtf$late_reaction[i]!="no")){
+    dtf$only_early[i] <- "no"
   }
 }
 
-data$only_early<-factor(data$only_early)
-summary(data$only_early)
-tabonear<-table(data$only_early,data$t235)
+dtf$only_early<-factor(dtf$only_early)
+summary(dtf$only_early)
+tabonear<-table(dtf$only_early,dtf$eosino_pre_sic.3)
 tabonear
 cprop(tabonear)
 barplotNM(a=cprop(tabonear)[1:2,1:3],b="nombre de reaction precoce uniquement selon le phenotype",c="2",d=90,e=c(2,5,8),f=c("non","oui"))
@@ -780,9 +774,9 @@ chisq.test(tabonear)
 #creation de la variablepar boucle for
 
 
-data$only_late<-factor(data$only_late)
-summary(data$only_late)
-tabonlate<-table(data$only_late,data$t235)
+dtf$only_late<-factor(dtf$only_late)
+summary(dtf$only_late)
+tabonlate<-table(dtf$only_late,dtf$eosino_pre_sic.3)
 tabonlate
 cprop(tabonlate)
 barplotNM(a=cprop(tabonlate)[1:2,1:3],b="nombre de reaction tardive uniquement selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -798,10 +792,10 @@ chisq.test(tabonlate)
 #creation de la variable par boucle for
 
 
-data$early_late<-factor(data$early_late)
-summary(data$early_late)
+dtf$early_late<-factor(dtf$early_late)
+summary(dtf$early_late)
 
-taboth<-table(data$early_late,data$t235)
+taboth<-table(dtf$early_late,dtf$eosino_pre_sic.3)
 taboth
 cprop(taboth)
 barplotNM(a=cprop(taboth)[1:2,1:3],b="proportion de reaction mixte selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
@@ -813,27 +807,27 @@ chisq.test(taboth)
 ###expecto pre SIC neutrophile
 
 ```{r}
-summary(data$neutro_pre_sic)
-by(data$neutro_pre_sic,data$t235,summary)
-boxplot(data$neutro_pre_sic~data$t235,xlab = "phenotype",ylab = "% neutro au expectoration",main="%neutro dans les expectoration selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,150))
+summary(dtf$neutro_pre_sic)
+by(dtf$neutro_pre_sic,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$neutro_pre_sic~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "% neutro au expectoration",main="%neutro dans les expectoration selon le phenotype",col=wes_palette("GrandBudapest1",2),axes=FALSE,ylim=c(0,150))
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-hist(data$neutro_pre_sic[data$t235==1],breaks = 100)
-hist(data$neutro_pre_sic[data$t235==0],breaks = 100)
-qqnorm(data$neutro_pre_sic[data$t235==1])
-qqnorm(data$neutro_pre_sic[data$t235==0])
-shapiro.test(data$neutro_pre_sic[data$t235==1])
-shapiro.test(data$neutro_pre_sic[data$t235==0])
-var.test(data$neutro_pre_sic[data$t235==0],data$neutro_pre_sic[data$t235==1])
-t.test(data$neutro_pre_sic[data$t235==0],data$neutro_pre_sic[data$t235==1],var.equal = TRUE,na.rm=TRUE)
+hist(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="yes"],breaks = 100)
+hist(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="no"],breaks = 100)
+qqnorm(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="yes"])
+qqnorm(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="no"])
+shapiro.test(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="yes"])
+shapiro.test(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="no"])
+var.test(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="no"],dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="yes"])
+t.test(dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="no"],dtf$neutro_pre_sic[dtf$eosino_pre_sic.3=="yes"],var.equal = TRUE,na.rm=TRUE)
 ```
 
 ###expecto pre SIC >/=76% neutro
 
 ```{r}
-summary(data$neutro_pre_sic.76)
-tabneu<-table(data$neutro_pre_sic.76,data$t235)
+summary(dtf$neutro_pre_sic.76)
+tabneu<-table(dtf$neutro_pre_sic.76,dtf$eosino_pre_sic.3)
 tabneu
 cprop(tabneu)
 barplotNM(a=cprop(tabneu)[1:2,1:3],b=" proportion de neutrophile sup ou egale a 76% selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
@@ -844,7 +838,7 @@ chisq.test(tabneu)
 ###expecto pre SIC >/= 61% neutro
 
 ```{r}
-tabneu61<-table(data$neutro_pre_sic.61,data$t235)
+tabneu61<-table(dtf$neutro_pre_sic.61,dtf$eosino_pre_sic.3)
 tabneu61
 cprop(tabneu61)
 barplotNM(a =cprop(tabneu61)[1:2,1:3],b=" proportion de neutrophile sup ou egale a 61% selon le phenotype",c="2",d=90,e=c(2,5,8),f=c("non","oui") )
@@ -856,23 +850,23 @@ chisq.test(tabneu)
 ###changement de neutrophile au expecto pendant le SIC
 
 ```{r}
-summary(data$change_neutro)
-by(data$change_neutro,data$t235,summary)
-boxplot(data$change_neutro~data$t235,xlab = "phenotype",ylab = "changement de neutrophile dans les expectorations",main="changement de neutrophile dans les expectorations selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
+summary(dtf$change_neutro)
+by(dtf$change_neutro,dtf$eosino_pre_sic.3,summary)
+boxplot(dtf$change_neutro~dtf$eosino_pre_sic.3,xlab = "phenotype",ylab = "changement de neutrophile dans les expectorations",main="changement de neutrophile dans les expectorations selon le phenotype",col=wes_palette(n=2,name = "GrandBudapest1"),axes=FALSE)
 axis(side=1,at=c(1,2),labels =c("noT2","T2") )
 legend("topright",legend = c("no T2","T2"),col=wes_palette(n=2,name = "GrandBudapest1"),lty = 1)
 axis(side=2)
-hist(data$change_neutro[data$t235==1],breaks = 75)
-hist(data$change_neutro[data$t235==0],breaks = 75)
-var.test(data$change_neutro[data$t235==0],data$change_neutro[data$t235==1])
-t.test(data$change_neutro[data$t235==0],data$change_neutro[data$t235==1],var.equal = TRUE,na.rm=TRUE)
+hist(dtf$change_neutro[dtf$eosino_pre_sic.3=="yes"],breaks = 75)
+hist(dtf$change_neutro[dtf$eosino_pre_sic.3=="yes"],breaks = 75)
+var.test(dtf$change_neutro[dtf$eosino_pre_sic.3=="no"],dtf$change_neutro[dtf$eosino_pre_sic.3=="yes"])
+t.test(dtf$change_neutro[dtf$eosino_pre_sic.3=="no"],dtf$change_neutro[dtf$eosino_pre_sic.3=="yes"],var.equal = TRUE,na.rm=TRUE)
 ```
 
 ###changement de FeNO pendant le SIC
 
 ```{r}
-summary(data$change_feno.17.5)
-tabfeno<-table(data$change_feno_17.5,data$t235)
+summary(dtf$change_feno.17.5)
+tabfeno<-table(dtf$change_feno_17.5,dtf$eosino_pre_sic.3)
 tabfeno
 cprop(tabfeno)
 barplotNM(a=cprop(tabfeno)[1:2,1:3],b="changement de FeNO sup ou egal à 17.5% selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
@@ -883,8 +877,8 @@ chisq.test(tabfeno)
 ###changement des eosino expecto post SIC
 
 ```{r}
-summary(data$change_eosino.3)
-tabcheo<-table(data$change_eosino.3,data$t235)
+summary(dtf$change_eosino.3)
+tabcheo<-table(dtf$change_eosino.3,dtf$eosino_pre_sic.3)
 tabcheo
 cprop(tabcheo)
 barplotNM(a=cprop(tabcheo)[1:2,1:3],b="changement d'Eo dans les expecto sup ou egal a 3% selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
@@ -896,7 +890,7 @@ barplotNM(a=cprop(tabcheo)[1:2,1:3],b="changement d'Eo dans les expecto sup ou e
 
 ```{r}
 
-tabpreo<-table(data$pre.eosino.76,data$t235)
+tabpreo<-table(dtf$pre.eosino.76,dtf$eosino_pre_sic.3)
 tabpreo
 cprop(tabpreo)
 barplotNM(a =cprop(tabpreo)[1:2,1:3],b="profil sputum pre sic eosino strict par phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui","ensemble") )
@@ -910,10 +904,10 @@ chisq.test(tabpreo)
 
 
 #descriptif
-tabpreneu<-table(data$pre_neutro.76,data$t235)
+tabpreneu<-table(dtf$pre_neutro.76,dtf$eosino_pre_sic.3)
 tabpreneu
 cprop(tabpreneu)
-by(data$pre_neutro.76,data$t235,summary)
+by(dtf$pre_neutro.76,dtf$eosino_pre_sic.3,summary)
 barplotNM(a=cprop(tabpreneu)[1:2,1:3],b="profil sputum neutro strict selon le phenotype",c=2,d=130,e=c(2,5,8),f=c("non","yes"))
 chisq.test(tabpreneu)
 ```
@@ -922,9 +916,9 @@ chisq.test(tabpreneu)
 
 ```{r}
 
-tabpremix<-table(data$pre_mixed.76,data$t235)
-by(data$pre_mixed.76,data$t235,table)
-data$pre_mixed.76<-factor(data$pre_mixed.76)
+tabpremix<-table(dtf$pre_mixed.76,dtf$eosino_pre_sic.3)
+by(dtf$pre_mixed.76,dtf$eosino_pre_sic.3,table)
+dtf$pre_mixed.76<-factor(dtf$pre_mixed.76)
 cprop(tabpremix)
 barplotNM(a=cprop(tabpremix)[1:2,1:3],b="profil sputum mixed granulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
 chisq.test(tabpremix)
@@ -934,8 +928,8 @@ chisq.test(tabpremix)
 
 ```{r}
 
-tabprepauci<-table(data$pre_pauci.76,data$t235)
-by(data$pre_pauci.76,data$t235,summary)
+tabprepauci<-table(dtf$pre_pauci.76,dtf$eosino_pre_sic.3)
+by(dtf$pre_pauci.76,dtf$eosino_pre_sic.3,summary)
 cprop(tabprepauci)
 barplotNM(a=cprop(tabprepauci)[1:2,1:3],b="profil sputum paucigranulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
 chisq.test(tabprepauci)
@@ -944,8 +938,8 @@ chisq.test(tabprepauci)
 ### pattern de réaction
 
 ```{r}
-tabprepat<-table(data$sputum_pre_sic,data$t235)
-by(data$sputum_pre_sic,data$t235,summary)
+tabprepat<-table(dtf$sputum_pre_sic,dtf$eosino_pre_sic.3)
+by(dtf$sputum_pre_sic,dtf$eosino_pre_sic.3,summary)
 cprop(tabprepat)
 barplotNM(a=cprop(tabprepat)[1:4,1:3],b="profil sputum pré sic selon le phenotype",c=4,d=120,e=c(4,8,13),f=c("eosinophilic","mixed granulocytic","neutrophilic","paucigranulocytic"))
 chisq.test(tabprepat)
@@ -954,8 +948,8 @@ chisq.test(tabprepat)
 
 
 ```{r}
-tabsev<-table(data$severity_ats,data$t235)
-by(data$severity_ats,data$t235,summary)
+tabsev<-table(dtf$severity_ats,dtf$eosino_pre_sic.3)
+by(dtf$severity_ats,dtf$eosino_pre_sic.3,summary)
 cprop(tabsev)
 barplotNM(a=cprop(tabsev)[1:2,1:3],b="taux de sévérité selon critère ATS selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
 chisq.test(tabsev)
@@ -965,12 +959,13 @@ chisq.test(tabsev)
 ###control de l'asthme
 
 ```{r}
-tabsab<-table(DATA$saba_w_frequency,DATA$t235)
+tabsab<-table(dtf$saba_w_frequency,dtf$eosino_pre_sic.3)
 tabsa
 cprop(tabsab)
 chisq.test(tabsa)
 
 ```
+
 
 
 
