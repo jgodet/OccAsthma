@@ -1,0 +1,47 @@
+---
+title: "multivarié t235"
+author: "Nicolas Migueres"
+date: "25/06/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r }
+library(readr)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+
+data <- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+dataref<-data
+data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
+
+data$time_last_exp_dich<- ifelse(data$time_last_exp_m>1,1,0)
+table(data$time_last_exp_dich)
+
+```
+# analyse logistique pour délai d'exposition supérieur à 1 mois
+
+##Modèle complet
+```{r}
+logistic<-glm(data$t235~data$age+as.factor(data$bmi.cat)+data$sex+data$hmw.lmw+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$rhinitis_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
+summary(logistic)
+
+```
+
+
+
+
