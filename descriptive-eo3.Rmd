@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 
 ```{r }
+library('kableExtra')
 library(readr)
 library("kableExtra")
 library("tableone")
@@ -451,8 +452,13 @@ dtf$saba_w_frequency<-factor(dtf$saba_w_frequency,c("3 times a day or more","1 o
 tabsa<-table(dtf$saba_w_frequency,dtf$eosino_pre_sic.3)
 tabsa
 cprop(tabsa)
+g<-cprop(tabsa)[1:5,1:3]
+colnames(g)<-rep("",3)
+barplot(g,beside=TRUE,xlab="phenotype",ylab = " utilisation de SABA", main="utilisation de SABA selon le phenotype",axes=FALSE,ylim =c(0,80),col=wes_palette(n=5,name = "BottleRocket1"))
+axis(side=1,at=c(3,9,15),labels =c("noT2","T2","ensemble") )
+axis(side=2)
+legend("topright",legend = c(">3 fois par jours","1 à 2 fois par jours","2 fois ou plus par semaines","une fois par semaine ou moins","jamais"),col=wes_palette(n=5,name = "BottleRocket1"),lty = 1)
 
-barplotNM(a=cprop(tabsa)[1:4,1:3],b="utilisation de SABA selon le phenotype",c=4,d=120,e=c(3,8,13),f=c("1 à 2 fois par jours","2 fois ou plus par semaines","une fois par semaine ou moins","jamais") )
 
 chisq.test(tabsa)
 fisher.test(tabsa)

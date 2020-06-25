@@ -388,6 +388,8 @@ DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
 DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
 
 
+DATA$ics_w_gina<-tolower(DATA$ics_w_gina)
+
 ###création nouvelle variable t250: critère T2 pour eo sang 400, feno 50 et eo crachat 3
 
 DATA$t250 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 50 | DATA$blood_eosino >= 400 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 50 & DATA$blood_eosino < 400 & DATA$eosino_pre_sic < 3, 0, NA)))
@@ -402,12 +404,15 @@ DATA2<-DATA[!is.na(DATA$t235),]
 
 DATA3<-DATA[!is.na(DATA$t250),]
 
+DATA4<-DATA[!is.na(DATA$eosino_pre_sic.3),]
+
 write.table(x = DATA, file = "DATAclean2.csv", sep = ";", row.names = FALSE)
 
 write.table(x = DATA2, file = "DATAshort.csv", sep = ";", row.names = FALSE)
 
 write.table(x = DATA3, file = "DATAshort50.csv", sep = ";", row.names = FALSE)
 
+write.table(x = DATA4, file = "DATAshort.3.csv", sep = ";", row.names = FALSE)
 ```
 
 ## Description des données manquantes

@@ -341,4 +341,10 @@ logNM(data$change_feno)
 logNM(data$neutro_pre_sic.61)
 
 ```
+```{r}
+mult<-glm(data$t235~varmult)
+```
+```{r}
+varmult<-names(data)[names(data)%in%c("data$age","data$bmi","data$sex","data$hmw.lmw","data$smoker","data$asthma_pre","data$atopy","data$sinusitis","data$dyspnea_w","data$rhinitis_w","data$dysphonia_w","data$saba_w","data$airway_obstruction","data$nsbh.res")]
+```
 

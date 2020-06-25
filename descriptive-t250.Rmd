@@ -451,7 +451,7 @@ wilcox.test(dat$time_last_exp_m[dat$t250==1],dat$time_last_exp_m[dat$t250==0],na
 
 ```{r}
 summary(dat$saba_w_frequency)
-dat$saba_w_frequency<-factor(dat$saba_w_frequency,c("?3 times a day","1 or 2 times a day","2 or more times a week","once or less per week","never"))
+dat$saba_w_frequency<-factor(dat$saba_w_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
 tabsa<-table(dat$saba_w_frequency,dat$t250)
 tabsa
 cprop(tabsa)
@@ -468,11 +468,16 @@ fisher.test(tabsa)
 
 ```{r}
 summary(dat$ics_w_gina)
-dat$ics_w_gina<-factor(dat$ics_w_gina,c("high","medium","low","no ICS"))
+dat$ics_w_gina<-factor(dat$ics_w_gina,c("high","medium","low","no ics"))
 tabics<-table(dat$ics_w_gina,dat$t250)
 tabics
 cprop(tabics)
-barplotNM(a=cprop(tabics)[1:4,1:3],b="utilisation des ICS selon le phenotype",c=4,d=80,e=c(3,8,13),f=c("haut","moyen","bas","pas de CSI"))
+g<-cprop(tabsa)[1:5,1:3]
+colnames(g)<-rep("",3)
+barplot(g,beside=TRUE,xlab="phenotype",ylab = " pourcentage", main="utilisation d'ICS selon le phenotype",axes=FALSE,ylim =c(0,80),col=wes_palette(n=5,name = "BottleRocket1"))
+axis(side=1,at=c(3,9,15),labels =c("noT2","T2","ensemble") )
+axis(side=2)
+legend("topright",legend = c(">3 fois par jours","1 à 2 fois par jours","2 fois ou plus par semaines","une fois par semaine ou moins","jamais"),col=wes_palette(n=5,name = "BottleRocket1"),lty = 1)
 chisq.test(tabics)
 ```
 
@@ -962,10 +967,10 @@ chisq.test(tabsev)
 ###control de l'asthme
 
 ```{r}
-tabsab<-table(dat$saba_w_frequency,dat$t250)
-tabsa
-cprop(tabsab)
-chisq.test(tabsa)
+tabcont<-table(dat$asthma_control_sic,dat$t250)
+tabcont
+cprop(tabcont)
+chisq.test(tabcont)
 
 ```
 
