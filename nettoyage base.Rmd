@@ -431,3 +431,14 @@ missmap(DATA, main = "Missing values vs observed")
 missmap(DATA2, main = "Missing values vs observed")
 ```
 
+###analyse descriptive sur l'ensemble de la population sur la répartition en catégorie d'agent
+
+```{r}
+#prick
+by(DATA$prick_test,DATA$agent_category,summary)
+
+#Ige Spécifique
+by(DATA$specific_ige,DATA$agent_category,summary)
+
+```
+

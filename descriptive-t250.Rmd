@@ -10,7 +10,7 @@ output:
 ```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
-
+# analyse descriptive pour des critère avec T2 éosinophilie > 400, NO >50 et sputum > 3%
 
 ```{r }
 library(readr)
@@ -969,6 +969,7 @@ chisq.test(tabsev)
 ```{r}
 tabcont<-table(dat$asthma_control_sic,dat$t250)
 tabcont
+barplotNM(a=cprop(tabcont)[1:2,1:3],b="control de l'asthme selon le phénotype", c=2,d=100,e=c(2,5,8),f=c("no","yes"))
 cprop(tabcont)
 chisq.test(tabcont)
 
