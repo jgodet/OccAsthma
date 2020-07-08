@@ -1,0 +1,128 @@
+---
+title: "T235 propension"
+author: "Nicolas Migueres"
+date: "07/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r}
+library(readr)
+library(broom)
+library(gtsummary)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library("magick")
+library("webshot")
+library("MatchIt")
+
+
+```
+
+```{r}
+df<- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+## Analyse sans score de propension selon SMD
+```{r}
+df$arm <- NA
+df$arm[df$t235 == 1] <- "T2"
+df$arm[df$t235 == 0] <- "non T2"
+
+df$arm<-as.factor(df$arm)
+
+df$time_last_exp_dich<- ifelse(df$time_last_exp_m>1,1,0)
+var<-c("bmi","age","sex","hmw.lmw","smoker","asthma_pre","atopy","sinusitis","dyspnea_w","dysphonia_w","nsbh.res","severity_ats","saba_sic","time_last_exp_dich")
+
+tabunmatch<-CreateTableOne(vars = var,strata = "arm",data = df,test = FALSE)
+p<-print(tabunmatch,smd=TRUE)
+kable(p, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+
+```{r}
+#création du score de propension
+
+data<-df%>% drop_na(var,arm)
+data1<-subset(data,select=c(arm,bmi,age,sex,hmw.lmw,smoker,asthma_pre,atopy,sinusitis,dyspnea_w,dysphonia_w,nsbh.res,severity_ats,saba_sic,time_last_exp_dich))
+
+ps<-glm(arm=="T2"~age+sex+bmi+hmw.lmw+severity_ats+sinusitis+smoker+saba_sic+dysphonia_w+dyspnea_w+nsbh.res+atopy+asthma_pre+time_last_exp_dich,data=data1,family = binomial)
+
+data1$psvalue <- predict(ps, type = "response")
+
+#appariement des données selon le score de propension
+
+m.nn <- matchit((arm=="T2" ) ~ psvalue + time_last_exp_dich + bmi, data=data1,
+                method= "nearest", ratio = 1, caliper =.25)
+
+#summary(m.nn)
+match.data = match.data(m.nn)
+
+matches <- data.frame(m.nn$match.matrix)
+
+# this command saves the data matched
+group1 <- match(row.names(matches), row.names(match.data))
+group2 <- match(matches$X1, row.names(match.data))
+
+match.data$matachID <- NA
+for (i in 1:length(match.data$matachID)){
+  if(!is.na(group1[i])){
+    match.data$matachID[group1[i]] <- i
+    match.data$matachID[group2[i]] <- i
+  }
+}
+match.data$matachID <- factor(match.data$matachID)
+
+## Construct a table
+tabMatched <- CreateTableOne(vars = var, strata = "arm", data = match.data, test = FALSE)
+#print(tabUnmatched, smd = TRUE)
+
+p3 <- print(tabMatched,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(p3, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+logitlast<-glm(time_last_exp_dich~arm+age+sex+bmi+hmw.lmw+severity_ats+sinusitis+smoker+saba_sic+dysphonia_w+dyspnea_w+nsbh.res+atopy+asthma_pre,data=match.data,family = binomial)
+summary(logitlast)
+
+library(gtsummary)
+tbl_regression(logitlast, exponentiate = TRUE)
+
+library("GGally")
+vif(logitlast)
+
+
+
+```
+```{r}
+##modèle sans appariement
+logitlas<-glm(time_last_exp_dich~arm+age+sex+bmi+hmw.lmw+severity_ats+sinusitis+smoker+saba_sic+dysphonia_w+dyspnea_w+nsbh.res+atopy+asthma_pre,data=df,family = binomial)
+summary(logitlas)
+
+library(gtsummary)
+tbl_regression(logitlas, exponentiate = TRUE)
+
+library("GGally")
+vif(logitlas)
+```
+
+

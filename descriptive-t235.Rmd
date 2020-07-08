@@ -256,6 +256,7 @@ chisq.test(tabpre)
 tabcat<-table(data$agent_category,data$t235)
 tabcat
 lprop(tabcat)
+
 ```
 
 ### Toux
@@ -268,6 +269,9 @@ barplotNM(a=cprop(tabcw)[1:2,1:3],b="phenotype et toux",c=2,d=110,e=c(2,5,8),f=c
 chisq.test(tabcw)
 
 ```
+
+
+
 
 ### Présence de sifflement
 

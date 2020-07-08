@@ -245,13 +245,22 @@ summary(logistic)
 logistic<-glm(data$t235~data$bmi+data$severity_ats+data$hmw.lmw*data$time_last_exp_dich+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
 
 summary(logistic)
-stepAIC(logistic)
+
 ```
 
 
 ```{r}
 logistic<-glm(data$t235~data$bmi+data$severity_ats+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
 summary(logistic)
+
+
+
+```
+
+```{r}
+logistic<-glm(data$t235~data$bmi+data$severity_ats+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
+summary(logistic)
+
 
 
 ```
