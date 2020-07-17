@@ -44,6 +44,17 @@ table(dtf$eosino_pre_sic.3)
 varshort<-names(dtf)[!names(dtf)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3" )]
 ```
 
+
+```{r}
+tabeo<-CreateTableOne(vars = varshort,strata = "eosino_pre_sic.3",data = dtf,addOverall = TRUE)
+p<-print(tabeo,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:4], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+ add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+```
+
 ```{r}
 require(tableone)
  tabOneT2 <- CreateTableOne(vars =varshort,data =dtf,strata = "eosino_pre_sic.3", addOverall = T)
@@ -60,7 +71,7 @@ kable(p3[,1:4], booktabs = T) %>%
 ```
 
 ```{r}
-(sapply(dtf,function(x) sum(is.na(x))))*100/879
+(sapply(dtf,function(x) sum(is.na(x))))*100/422
 missmap(dtf, main = "Missing values vs observed")
 ```
 

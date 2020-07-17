@@ -29,12 +29,14 @@ library("naniar")
 library("dplyr")
 library('car')
 
-data <- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
-dataref<-data
+data<- read_delim("DATAshort.csv", ";", escape_double = FALSE, trim_ws = TRUE)
 data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
 
 data$time_last_exp_dich<- ifelse(data$time_last_exp_m>1,1,0)
 table(data$time_last_exp_dich)
+
+data$nsbh.res<-factor(data$nsbh.res,c("negative","mild","moderate to severe"))
+data$severity_asthma_gina_sic<-factor(data$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
 
 ```
 ##Création d'une variable dichotomique pour stratification sur le délai d'exposition, analyse bivariée.
@@ -47,6 +49,7 @@ tabdys<-table(data$time_last_exp_dich,data$dysphonia_w)
 tabdys
 cprop(tabdys)
 
+datna<-data%>%drop_na(t235,bmi,sex,hmw.lmw,smoker,asthma_pre,atopy,sinusitis,dyspnea_w,dysphonia_w,nsbh.res,saba_sic,time_last_exp_m)
 
 ```
 
@@ -58,210 +61,29 @@ cprop(tabdys)
 
 ##Modèle complet
 ```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$hmw.lmw+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
+logis<-glm(t235~bmi+sex+hmw.lmw+smoker+asthma_pre+atopy+sinusitis+dyspnea_w+dysphonia_w+nsbh.res+saba_sic+time_last_exp_m,data=datna,family = binomial)
+summary(logis)
 
 ```
-### moins dysphonie
 ```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$hmw.lmw+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-```
-
-###moins HMW/LMW
-```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-```
-### moins sinusite
-
-```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$smoker+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-```
-###moins sexe
-```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$smoker+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-```
-
-### moins l'age
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$smoker+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-```
-
-### moins tabac
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-
-
-```
-
-###moins saba sic
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-
-vif(logistic)
-
+stepAIC(logis)
 ```
 
 
 ```{r}
-
-logistic<-glm(data$t235~data$severity_ats+data$bmi+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res,family = binomial,subset=data$time_last_exp_dich==1)
-summary(logistic)
-library(gtsummary)
-tbl_regression(logistic, exponentiate = TRUE)
-ggcoef(logistic, exponentiate = TRUE)
-
-vif(logistic)
+logosp<-glm(t235~dyspnea_w+time_last_exp_m+hmw.lmw+saba_sic+nsbh.res+bmi+asthma_pre,data=datna,family=binomial)
+summary(logosp)
+vif(logosp)
+tbl_regression(logosp,exponentiate = TRUE)
+ggcoef(logosp,exponentiate = TRUE)
 ```
 
-##Comparaison du modèle logistique pour l'autre strate
-
+###même modèle mais avec les donnés manquant que pour variables finales 583 individu contre 542
 ```{r}
-logistic<-glm(data$t235~data$bmi+data$asthma_pre+data$atopy+data$dyspnea_w+data$nsbh.res,family = binomial,subset=data$time_last_exp_dich==0)
-
-summary(logistic)
-vif(logistic)
-```
-
-
-
-#step by step en partant du modème complet pour time_last_expo_dich==0
-
-
-```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$hmw.lmw+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-
-```
-
-### sans smoker
-
-```{r}
-
-logistic<-glm(data$t235~data$age+data$bmi+data$sex+data$hmw.lmw+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-
-###sans bmi
-```{r}
-logistic<-glm(data$t235~data$age+data$sex+data$hmw.lmw+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-### sans age
-
-```{r}
-logistic<-glm(data$t235~data$sex+data$hmw.lmw+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-
-### sans sex
-
-```{r}
-logistic<-glm(data$t235~data$hmw.lmw+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-
-### sans atopie
-
-```{r}
-logistic<-glm(data$t235~data$hmw.lmw+data$asthma_pre+data$sinusitis+data$dyspnea_w+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-
-### sans dyspnée
-
-```{r}
-logistic<-glm(data$t235~data$hmw.lmw+data$asthma_pre+data$sinusitis+data$dysphonia_w+data$nsbh.res+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-```
-
-### hyperréactivité bronchique
-
-```{r}
-
-logistic<-glm(data$t235~data$hmw.lmw+data$asthma_pre+data$sinusitis+data$dysphonia_w+data$saba_sic,family = binomial,subset=data$time_last_exp_dich==0)
-summary(logistic)
-exp(cbind(Odds_Ratio=coef(logistic),confint(logistic)))
-```
-
-### sans saba_sic
-
-```{r}
-logistic<-glm(data$t235~data$severity_ats+data$hmw.lmw+data$asthma_pre+data$sinusitis+data$dysphonia_w,family = binomial,subset=data$time_last_exp_dich==0)
-
-summary(logistic)
-vif(logistic)
-
-library(gtsummary)
-tbl_regression(logistic, exponentiate = TRUE)
-
-```
-
-###
-
-```{r}
-logistic<-glm(data$t235~data$hmw.lmw+data$asthma_pre+data$sinusitis+data$dysphonia_w,family = binomial,subset=data$time_last_exp_dich==1)
-
-summary(logistic)
-vif(logistic)
-
-```
-
-
-
-###modèle complet avec interaction
-
-```{r}
-logistic<-glm(data$t235~data$age+data$bmi+data$severity_ats+data$hmw.lmw*data$time_last_exp_dich+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-summary(logistic)
-
-
-```
-###moins l'age
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$severity_ats+data$hmw.lmw*data$time_last_exp_dich+data$smoker+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-summary(logistic)
-```
-
-
-###moins tabac
-```{r}
-logistic<-glm(data$t235~data$bmi+data$severity_ats+data$hmw.lmw*data$time_last_exp_dich+data$asthma_pre+data$atopy+data$sinusitis+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-summary(logistic)
-
-```
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$severity_ats+data$hmw.lmw*data$time_last_exp_dich+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-
-summary(logistic)
-
-```
-
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$severity_ats+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-summary(logistic)
-
-
-
-```
-
-```{r}
-logistic<-glm(data$t235~data$bmi+data$severity_ats+data$asthma_pre+data$atopy+data$dyspnea_w+data$dysphonia_w*data$time_last_exp_dich+data$nsbh.res+data$saba_sic,family = binomial)
-summary(logistic)
-
-
-
+logospa<-glm(t235~dyspnea_w+time_last_exp_m+hmw.lmw+saba_sic+nsbh.res+bmi+asthma_pre,data=data,family=binomial)
+summary(logospa)
+vif(logospa)
+tbl_regression(logospa,exponentiate = TRUE)
+ggcoef(logospa,exponentiate = TRUE)
 ```
 

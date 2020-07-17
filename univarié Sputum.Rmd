@@ -1,38 +1,32 @@
 ---
-title: "univarié"
+title: "univarié sputum"
 author: "Nicolas Migueres"
-date: "15/06/2020"
+date: "16/07/2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r }
 library(readr)
-data <- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
-dataref<-data
+data <- read_delim("datashort.3.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+
 data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
+data$eosino_pre_sic_dich<-ifelse(data$eosino_pre_sic.3=="yes",1,0)
 
 
 
 ```
 
+## Analyse univarié variable eosino_pre_sic_dich
 ```{r}
-#création de la variable t235 pour un cut off de feNO de 35
-
-
-
-data$t235 <- ifelse(is.na(data$feno_pre_sic) & is.na(data$blood_eosino) & is.na(data$eosino_pre_sic), NA, ifelse(data$feno_pre_sic >= 35 | data$blood_eosino >= 300 | data$eosino_pre_sic >=3, 1, ifelse(data$feno_pre_sic < 35 & data$blood_eosino < 300 & data$eosino_pre_sic < 3, 0, NA)))
-
-
-## Analyse univarié variable t235
 
 #creation fonction pour analyse logistique:
 logNM<-function(a){
   
-  logistic<-glm(data$t235~a,family=binomial)
+  logistic<-glm(data$eosino_pre_sic_dich~a,family=binomial)
   
   print(summary(logistic))
   
@@ -204,13 +198,20 @@ logNM(data$ige_mediated_oa_na)
 ###log SABA_frequence
 
 ```{r}
-logNM(data$saba_w_frequency)
+logNM(data$saba_sic_frequency)
 ```
+###log SABA_sic
+
+```{r}
+logNM(a = data$saba_sic)
+```
+
+
 
 ###logLABA
 
 ```{r}
-logNM(data$laba_w)
+logNM(data$laba_sic)
 ```
 
 ### logseverite GINA
@@ -261,9 +262,15 @@ logNM(data$ncs_w)
 ###logseverite gina
 
 ```{r}
+data$severity_asthma_gina_sic<-factor(data$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
+
 logNM(data$severity_asthma_gina_w)
+
+```
+```{r}
 logNM(data$severity_asthma_step_w)
 ```
+
 
 ### logexacerbation
 
@@ -275,7 +282,6 @@ logNM(data$exa_2)
 
 ```{r}
 logNM(data$time_last_exp_m)
-
 ```
 
 ###VEMS
@@ -335,17 +341,3 @@ logNM(data$severity_ats)
 ```{r}
 logNM(data$change_feno)
 ```
-
-###log neutro expectoration
-
-```{r}
-logNM(data$neutro_pre_sic.61)
-
-```
-```{r}
-mult<-glm(data$t235~varmult)
-```
-```{r}
-varmult<-names(data)[names(data)%in%c("data$age","data$bmi","data$sex","data$hmw.lmw","data$smoker","data$asthma_pre","data$atopy","data$sinusitis","data$dyspnea_w","data$rhinitis_w","data$dysphonia_w","data$saba_w","data$airway_obstruction","data$nsbh.res")]
-```
-
