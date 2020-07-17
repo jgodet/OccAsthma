@@ -1,0 +1,75 @@
+---
+title: "t2t analyse descriptives univariées"
+author: "Nicolas Migueres"
+date: "17/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#variable t2t: regarder en priorité critère sputum, si NA, se reporter sur les deux autres critères.
+
+
+
+```{r}
+library("MASS")
+library("gtsummary")
+library("GGally")
+library(readr)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library('car')
+
+data<- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
+
+```
+
+
+
+```{r}
+data$t2t<-NULL
+for(i in 1:dim(data)[1]){
+  
+  if(is.na(data$eosino_post_sic.3[i]) & is.na(data$blood_eosino_400[i])&is.na(data$feno_pre_sic.50[i])){
+    data$t2t[i]<-NA
+  }
+  if(!is.na(data$eosino_pre_sic.3[i])&data$eosino_pre_sic.3[i]=="yes"){
+    data$t2t[i]<-"1"
+  }
+  if(!is.na(data$eosino_pre_sic.3[i]) & data$eosino_pre_sic.3[i]=="no")
+    data$t2t[i]<-"0"
+  }
+  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="yes"|data$feno_pre_sic.50[i]=="yes")){
+    data$t2t[i]<-"1"
+  }
+  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="no"& data$feno_pre_sic.50[i]=="no") ){
+    data$t2t[i]<-"0"
+  }
+  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]!="no"& data$feno_pre_sic.50[i]=="no") ){
+    data$t2t[i]<-NA
+  }
+  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="no"& data$feno_pre_sic.50[i]!="no") ){
+    data$t2t[i]<-NA 
+  }
+  
+
+
+data$t2p <- ifelse(data$eosino_pre_sic.3 == 'yes', 1, 
+                      ifelse(data$eosino_pre_sic.3 == 'no', 0, 
+                      ifelse(data$blood_eosino_400 == 'yes' | data$feno_pre_sic.50 == 'yes', 1,
+                      ifelse(data$blood_eosino_400 == 'no' & data$feno_pre_sic.50 == 'no', 0, NA))))
+```
+
