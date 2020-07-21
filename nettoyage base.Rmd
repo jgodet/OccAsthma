@@ -385,6 +385,7 @@ for(i in 1:dim(DATA)[1]){
   }
 }
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
+
 DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
 
 
@@ -397,8 +398,19 @@ DATA$t250 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(
 
 DATA$rhinitis_onset<-ifelse(test = DATA$onset_of_rhinitis_w=="before","before","not before")
 
+DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
+DATA$severity_asthma_gina_sic<-factor(DATA$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
+
 DATA$blood_eosino_400<-ifelse(DATA$blood_eosino>=400,"yes","no")
 table(DATA$blood_eosino_400)
+
+DATA$t2p <- ifelse(DATA$eosino_pre_sic.3 == 'yes', 1, 
+                      ifelse(DATA$eosino_pre_sic.3 == 'no', 0, 
+                      ifelse(DATA$blood_eosino_400 == 'yes' | DATA$feno_pre_sic.50 == 'yes', 1,
+                      ifelse(DATA$blood_eosino_400 == 'no' & DATA$feno_pre_sic.50 == 'no', 0, NA))))
+
+table(DATA$t2p)
+
 
 DATA2<-DATA[!is.na(DATA$t235),]
 
@@ -413,6 +425,7 @@ write.table(x = DATA2, file = "DATAshort.csv", sep = ";", row.names = FALSE)
 write.table(x = DATA3, file = "DATAshort50.csv", sep = ";", row.names = FALSE)
 
 write.table(x = DATA4, file = "DATAshort.3.csv", sep = ";", row.names = FALSE)
+
 ```
 
 ## Description des données manquantes

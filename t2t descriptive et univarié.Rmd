@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
+library("FactoMineR")
+library( "factoextra")
 library("MASS")
 library("gtsummary")
 library("GGally")
@@ -32,48 +34,493 @@ library("naniar")
 library("dplyr")
 library('car')
 
-data<- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
-data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.factor)
 
+
+```
+
+```{r}
+dat2t<- read_delim("dataclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+dat2t[sapply(dat2t, is.character)] <- lapply(dat2t[sapply(dat2t, is.character)],as.factor)
+
+dat2t$nsbh.res<-factor(dat2t$nsbh.res,c("negative","mild","moderate to severe"))
+dat2t$severity_asthma_gina_sic<-factor(dat2t$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
+
+#créatiion d'une nouvelle variable indiquant une modification de 10% de VEMS théorique
+dat2t$baseline_fev10<-dat2t$baseline_fev1/10
+```
+
+
+```{r}
+
+dat<-dat2t[is.na(dat2t$eosino_pre_sic.3),]
+table(dat$blood_eosino_400,dat$feno_pre_sic.50)
+table(dat2t$eosino_pre_sic.3)
+
+#nombre attendu de t2t est donc de 487 pour 0 et 283 pour 1
+
+
+
+t2pVec <- c(rep(NA, length(dat2t$eosino_pre_sic.3)))
+t2pVec[dat2t$eosino_pre_sic.3 == 'yes'] <- 1
+t2pVec[dat2t$eosino_pre_sic.3 == 'no'] <- 0
+t2pVec[is.na(dat2t$eosino_pre_sic.3) & (dat2t$blood_eosino_400 == 'no' & dat2t$feno_pre_sic.50 == 'no')] <- 0
+t2pVec[is.na(dat2t$eosino_pre_sic.3) &(dat2t$blood_eosino_400 =='yes'& dat2t$feno_pre_sic.50 =='yes')]<-1
+t2pVec[is.na(dat2t$eosino_pre_sic.3) &(dat2t$blood_eosino_400 =='no'& dat2t$feno_pre_sic.50 =='yes')]<-1
+t2pVec[is.na(dat2t$eosino_pre_sic.3) &(dat2t$blood_eosino_400 =='yes'& dat2t$feno_pre_sic.50 =='no')]<-1
+table(t2pVec)
+dat2t$t2t<-t2pVec
+summary(dat2t$t2t)
+
+```
+
+## analyse descriptive bivarié et doonées manquante
+
+```{r}
+dat2tna<-dat2t[!is.na(dat2t$t2t),]
+(sapply(dat2tna,function(x) sum(is.na(x))))*100/770
+missmap(dat2tna, main = "Missing values vs observed")
+
+varshort2<-names(dat2t)[!names(dat2t)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3","t250","t2t" )]
+
+require(tableone)
+ 
+tabOneT2 <- CreateTableOne(vars =varshort2,data =dat2tna,strata = "t2t", addOverall = T)
+  p3 <- print(tabOneT2,nonnormal = varshort2,exact =varshort2, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+
+kable(p3[,1:4], booktabs = T) %>%
+  row_spec(0,bold=TRUE) %>%
+   row_spec(1, hline_after = T) %>%
+   row_spec(dim(p3)[1],hline_after = T) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+  
+
+
+```
+
+##différence en analyse descriptive
+
+non T2 avec un BMI plus élevé, age sex similaire
+Pas de différence en terme d'antécédent d'asthme
+délai plus élevé chez les non t2
+clinique: pas de différecne en terme de toux, sifflement, serrement, crachat, rhinite 
+plus de dysphonie chez les non T2
+plus d'IgE spécifique chez les T2
+
+thérapeutique: plus d'utilisation de SABA, laba ics, severity asthma gina w et sic
+
+délai dernière exposition plus faible chez les T2
+
+EFR: FEV1 plus faible et plus d'obstruction, plus sévère ATS
+
+
+## analyse logistique univariée (fin ligne 426)
+```{r}
+#creation fonction pour analyse logistique:
+logNM<-function(a){
+  
+  logistic<-glm(dat2t$t2t~a,family=binomial)
+  
+  print(summary(logistic))
+  
+  exp(cbind(Odds_Ration=coef(logistic),confint(logistic)))  
+}
 ```
 
 
 
+###log age
+
 ```{r}
-data$t2t<-NULL
-for(i in 1:dim(data)[1]){
-  
-  if(is.na(data$eosino_post_sic.3[i]) & is.na(data$blood_eosino_400[i])&is.na(data$feno_pre_sic.50[i])){
-    data$t2t[i]<-NA
-  }
-  if(!is.na(data$eosino_pre_sic.3[i])&data$eosino_pre_sic.3[i]=="yes"){
-    data$t2t[i]<-"1"
-  }
-  if(!is.na(data$eosino_pre_sic.3[i]) & data$eosino_pre_sic.3[i]=="no")
-    data$t2t[i]<-"0"
-  }
-  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="yes"|data$feno_pre_sic.50[i]=="yes")){
-    data$t2t[i]<-"1"
-  }
-  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="no"& data$feno_pre_sic.50[i]=="no") ){
-    data$t2t[i]<-"0"
-  }
-  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]!="no"& data$feno_pre_sic.50[i]=="no") ){
-    data$t2t[i]<-NA
-  }
-  if(is.na(data$eosino_post_sic.3[i]) & (data$blood_eosino_400[i]=="no"& data$feno_pre_sic.50[i]!="no") ){
-    data$t2t[i]<-NA 
-  }
-  
+logNM(a=dat2t$age)
+         
+```
+
+###logbmi
+
+```{r}
+logNM(dat2t$bmi)
+```
+
+###logsex
+
+```{r}
+logNM(dat2t$sex)
+```
 
 
-data$t2p <- ifelse(data$eosino_pre_sic.3 == 'yes', 1, 
-                      ifelse(data$eosino_pre_sic.3 == 'no', 0, 
-                      ifelse(data$blood_eosino_400 == 'yes' | data$feno_pre_sic.50 == 'yes', 1,
-                      ifelse(data$blood_eosino_400 == 'no' & data$feno_pre_sic.50 == 'no', 0, NA))))
+###Logeducation
 
-indEosino0 <- which(is.na(data$eosino_pre_sic.3))
-data %>% filter(indEosino0) %>% table(blood_eosino_400, feno_pre_sic.50)
+```{r}
+logNM(a=as.factor(dat2t$education))
+```
+
+###LogHMW
+
+```{r}
+logNM(dat2t$hmw.lmw)
+```
+
+###logsmoker
+
+```{r}
+logNM(as.factor(dat2t$smoker))
+```
+
+
+### logasthme préexistant
+
+```{r}
+logNM(dat2t$asthma_pre)
+```
+
+###logAge d'apparition
+
+```{r}
+logNM(as.factor(dat2t$age_onset_cat))
+```
+
+###logatopy
+
+```{r}
+logNM(dat2t$atopy)
+```
+
+
+###logdélai d'apparition symptomes asthme
+
+```{r}
+logNM(dat2t$asthma_delay)
+```
+
+###logdurée de l'exposition avec symptomes
+
+```{r}
+logNM(dat2t$asthma_work_time)
+```
+
+
+###logsinusite
+
+```{r}
+logNM(dat2t$sinusitis)
+```
+
+###logcough
+
+```{r}
+logNM(dat2t$cough_w)
+```
+
+###logwheezzing
+
+```{r}
+
+logNM(dat2t$wheezing_w)
+```
+
+###logDyspnea
+
+```{r}
+logNM(dat2t$dyspnea_w)
+```
+
+
+###logtightness
+
+```{r}
+logNM(dat2t$tightness_w)
+```
+
+
+###logsputum
+
+```{r}
+logNM(dat2t$sputum)
+```
+
+###logrhinitis
+
+```{r}
+logNM(dat2t$rhinitis_w)
+```
+
+###logonselt rhinitis/ creation variable onset_of_rhinitis_w_na
+
+```{r}
+
+logNM(dat2t$onset_of_rhinitis_w)
+```
+ 
+### logconjoctivite
+ 
+```{r}
+logNM(dat2t$conjonct_w)
+```
+ 
+### log eczema
+ 
+```{r}
+logNM(dat2t$eczema_w)
+```
+ 
+### Log urticaire
+
+```{r}
+logNM(dat2t$urticaria_w) 
+```
+
+
+
+###log dysphonie
+
+```{r}
+logNM(dat2t$dysphonia_w)
+```
+
+###log specific IgE/création variable ige_mediated_oa_na
+
+```{r}
+dat2t$ige_mediated_oa_na<-as.character(dat2t$ige_mediated_oa)
+dat2t$ige_mediated_oa_na[dat2t$ige_mediated_oa_na%in%c("not performed")]<-NA
+dat2t$ige_mediated_oa_na<-factor(dat2t$ige_mediated_oa_na)
+
+logNM(dat2t$ige_mediated_oa_na)
+```
+
+###log SABA_frequence
+
+```{r}
+logNM(dat2t$saba_sic_frequency)
+```
+###log SABA_sic
+
+```{r}
+logNM(a = dat2t$saba_sic)
+```
+
+
+
+###logLABA
+
+```{r}
+logNM(dat2t$laba_sic)
+```
+
+### logseverite GINA
+
+```{r}
+logNM(dat2t$ics_w_gina)
+```
+
+###logleukotriène
+
+```{r}
+logNM(dat2t$ltra_w)
+```
+
+###log_lama
+
+```{r}
+logNM(dat2t$lama_w)
+```
+
+
+###logtheophylline
+
+```{r}
+logNM(dat2t$theo_w)
+```
+
+###logcorticoide oraux
+
+```{r}
+
+logNM(dat2t$ocs_w_dose)
+```
+
+
+###logantihist
+
+```{r}
+logNM(dat2t$anti_h1_w)
+```
+
+###logncs
+
+```{r}
+logNM(dat2t$ncs_w)
+```
+
+###logseverite gina
+
+```{r}
+dat2t$severity_asthma_gina_sic<-factor(dat2t$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
+
+logNM(dat2t$severity_asthma_gina_w)
+
+```
+```{r}
+logNM(dat2t$severity_asthma_step_w)
+```
+
+
+### logexacerbation
+
+```{r}
+logNM(dat2t$exa_2)
+```
+
+###délai avant test d'expo
+
+```{r}
+logNM(dat2t$time_last_exp_m)
+```
+
+###VEMS
+
+```{r}
+logNM(dat2t$baseline_fev1)
+```
+
+###logtiffeneau
+
+```{r}
+logNM(dat2t$fev1_fvc)
+```
+
+###logobstruction bronchique
+
+```{r}
+logNM(dat2t$airway_obstruction)
+```
+
+###lognsbh
+```{r}
+logNM(dat2t$nsbh.res)
+```
+
+###logréaction précoce isolée
+```{r}
+logNM(dat2t$only_early)
+```
+
+###réaction mixte
+
+```{r}
+logNM(dat2t$early_late)
+```
+
+###réaction tardive seule
+
+```{r}
+
+logNM(dat2t$only_late)
+```
+
+###logchangement d'hyperréactivité bronchique supérieur à 2
+
+```{r}
+logNM(dat2t$nsbh_sic_max_ratio)
+```
+###Séverité ATS
+```{r}
+logNM(dat2t$severity_ats)
+```
+
+
+
+###obstruction
+```{r}
+logNM(dat2t$airway_obstruction)
+
+```
+```{r}
+
+logNM(a=dat2t$baseline_fev10)
+
+```
+
+Variable avec une association à 0,1 en logistique univarié:
+BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, lama_w,baseline fev1, severity_ats,nsbh.res
+
+### time_last_exp_m
+
+```{r}
+hist(dat2t$time_last_exp_m,breaks = 500)
+qqnorm(dat2t$time_last_exp_m)
+qqline(dat2t$time_last_exp_m)
+dat2t$time_last_exp_m_norm<-log(dat2t$time_last_exp_m)
+hist(dat2t$time_last_exp_m_norm,breaks = 500)
+qqnorm(dat2t$time_last_exp_m_norm)
+qqline(dat2t$time_last_exp_m_norm)
+```
+
+
+
+
+###analyse multivariée
+
+
+BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, ,baseline fev1, severity_ats,nsbh.res
+
+
+### modèle complet (9 variables 283 évènements)
+```{r}
+
+
+dat2treg1<-dat2t%>%drop_na(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats)
+
+mod1<-glm(t2t~bmi+wheezing_w+dysphonia_w+laba_sic+saba_sic+baseline_fev10+nsbh.res+severity_ats,data=dat2treg1,family = binomial)
+summary(mod1)
+tbl_regression(mod1,exponentiate = TRUE)
+ggcoef(mod1)
+vif(mod1)
+
+
+```
+### modèle optimal
+
+```{r}
+
+stepAIC(mod1)
+```
+
+```{r}
+
+mod2<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res,data = dat2treg1,family=binomial)
+summary(mod2)
+tbl_regression(mod2,exponentiate = TRUE)
+ggcoef(mod2,exponentiate = TRUE)
+vif(mod2)
+```
+Modèle optimal avec données manquantes que pour les variables finales (passage de 571 sujets à 1247)
+
+```{r}
+dat2treg2<-dat2t%>%drop_na(dysphonia_w,bmi,laba_sic,saba_sic,nsbh.res,t2t)
+mod3<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res,data = dat2treg2,family=binomial)
+summary(mod2)
+tbl_regression(mod3,exponentiate = TRUE)
+ggcoef(mod3,exponentiate = TRUE)
+vif(mod3)
+
+```
+
+##analyse en composante principale concernant les 9 variables du modèle complet
+
+```{r}
+
+
+datPCA<-dat2t%>%select(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats)
+datPCAna<-na.omit(datPCA)
+qualiVect<-datPCAna%>%select(t2t,wheezing_w,dysphonia_w,laba_sic,saba_sic,nsbh.res,severity_ats)
+
+res.PCA<-PCA(datPCAna,scale.unit=TRUE,quali.sup = c(1,3,4,5,6,8,9), )
+summary(res.PCA)
+
+fviz_pca_ind (res.PCA,geom.ind  = "point",geom.var="text",habillage = c("t2t","dysphonia_w","nsbh.res","saba_sic","severity_ats","laba_sic"),addEllipses = TRUE,repel=TRUE)
+fviz_contrib(res.PCA, choice = "ind", axes = 1:2)
+
 
 
 ```
