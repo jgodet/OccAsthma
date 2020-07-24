@@ -273,117 +273,7 @@ DATA$nsbh.res[DATA$nsbh.res%in%c("severe to moderate")]<-"moderate to severe"
 DATA$nsbh.res<-as.factor(DATA$nsbh.res)
 DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
 
-DATA$only_early<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$early_reaction[i]) & is.na(DATA$late_reaction[i])) {
-    DATA$only_early[i] <- NA
-  }
-  if(is.na(DATA$early_reaction[i]) | is.na(DATA$late_reaction[i])) {
-    DATA$only_early[i] <- NA
-  }
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & DATA$early_reaction[i]=="yes" & DATA$late_reaction[i]=="no"){
-    DATA$only_early[i] <- "yes"
-  }
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & (DATA$early_reaction[i]!="yes" | DATA$late_reaction[i]!="no")){
-    DATA$only_early[i] <- "no"
-  }
-}
 
-DATA$only_late<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$early_reaction[i]) | is.na(DATA$late_reaction[i])) {
-    DATA$only_late[i] <- NA
-  }
-  
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & DATA$early_reaction[i]=="no" & DATA$late_reaction[i]=="yes"){
-    DATA$only_late[i] <- "yes"
-  }
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & (DATA$early_reaction[i]!="no" | DATA$late_reaction[i]!="yes")){
-    DATA$only_late[i] <- "no"
-  }
-}
-
-DATA$early_late<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$early_reaction[i]) | is.na(DATA$late_reaction[i])) {
-    DATA$early_late[i] <- NA
-  }
-  
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & DATA$early_reaction[i]=="yes" & DATA$late_reaction[i]=="yes"){
-    DATA$early_late[i] <- "yes"
-  }
-  if( (!is.na(DATA$early_reaction[i]) & !is.na(DATA$late_reaction[i])) & (DATA$early_reaction[i]=="no" | DATA$late_reaction[i]=="no")){
-    DATA$early_late[i] <- "no"
-  }
-}
-DATA$pre_eosino.61<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$eosino_pre_sic.3[i]) | is.na(DATA$neutro_pre_sic.61[i])) {
-    DATA$pre_eosino.61[i] <- NA
-  }
-  
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.61[i])) & DATA$eosino_pre_sic.3[i]=="yes" & DATA$neutro_pre_sic.61[i]=="no"){
-    DATA$pre_eosino.61[i] <- "yes"
-  }
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.61[i])) & (DATA$eosino_pre_sic.3[i]!="yes" | DATA$neutro_pre_sic.61[i]!="no")){
-    DATA$pre_eosino.61[i] <- "no"
-  }
-}
-
-DATA$pre.eosino.76<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$eosino_pre_sic.3[i]) | is.na(DATA$neutro_pre_sic.76[i])) {
-    DATA$pre.eosino.76[i] <- NA
-  }
-  
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & DATA$eosino_pre_sic.3[i]=="yes" & DATA$neutro_pre_sic.76[i]=="no"){
-    DATA$pre.eosino.76[i] <- "yes"
-  }
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & (DATA$eosino_pre_sic.3[i]!="yes" | DATA$neutro_pre_sic.76[i]!="no")){
-    DATA$pre.eosino.76[i] <- "no"
-  }
-}
-
-DATA$pre_neutro.76<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$neutro_pre_sic.76[i])|is.na(DATA$eosino_pre_sic.3[i])){
-    DATA$pre_neutro.76[i]<-NA
-  }
-  if((!is.na(DATA$neutro_pre_sic.76[i]) & !is.na(DATA$eosino_pre_sic.3[i])) & (DATA$neutro_pre_sic.76[i]=="yes" & DATA$eosino_pre_sic.3[i]=="no")){
-    DATA$pre_neutro.76[i]<-"yes"
-  }
-  if((!is.na(DATA$neutro_pre_sic.76[i]) & !is.na(DATA$eosino_pre_sic.3[i])) & (DATA$neutro_pre_sic.76[i]!="yes" & DATA$eosino_pre_sic.3[i]!="no")){
-    DATA$pre_neutro.76[i]<-"no"
-  }
-}
-
-DATA$pre_mixte.76<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$eosino_pre_sic.3[i]) | is.na(DATA$neutro_pre_sic.76[i])) {
-    DATA$pre_mixed.76[i] <- NA
-  }
-  
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & DATA$eosino_pre_sic.3[i]=="yes" & DATA$neutro_pre_sic.76[i]=="yes"){
-    DATA$pre_mixed.76[i] <- "yes"
-  }
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & (DATA$eosino_pre_sic.3[i]!="yes" | DATA$neutro_pre_sic.76[i]!="yes")){
-    DATA$pre_mixed.76[i] <- "no"
-  }
-}
-
-DATA$pre_pauci.76<-NULL
-for(i in 1:dim(DATA)[1]){
-  if(is.na(DATA$eosino_pre_sic.3[i]) | is.na(DATA$neutro_pre_sic.76[i])) {
-    DATA$pre_pauci.76[i] <- NA
-  }
-  
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & DATA$eosino_pre_sic.3[i]=="no" & DATA$neutro_pre_sic.76[i]=="no"){
-    DATA$pre_pauci.76[i] <- "yes"
-  }
-  if( (!is.na(DATA$eosino_pre_sic.3[i]) & !is.na(DATA$neutro_pre_sic.76[i])) & (DATA$eosino_pre_sic.3[i]!="no" | DATA$neutro_pre_sic.76[i]!="no")){
-    DATA$pre_pauci.76[i] <- "no"
-  }
-}
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
 
 DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
@@ -402,15 +292,11 @@ DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
 DATA$severity_asthma_gina_sic<-factor(DATA$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
 
 DATA$blood_eosino_400<-ifelse(DATA$blood_eosino>=400,"yes","no")
-table(DATA$blood_eosino_400)
+table
 
-DATA$t2p <- ifelse(DATA$eosino_pre_sic.3 == 'yes', 1, 
-                      ifelse(DATA$eosino_pre_sic.3 == 'no', 0, 
-                      ifelse(DATA$blood_eosino_400 == 'yes' | DATA$feno_pre_sic.50 == 'yes', 1,
-                      ifelse(DATA$blood_eosino_400 == 'no' & DATA$feno_pre_sic.50 == 'no', 0, NA))))
+# changer la distribution de la variable time_last_exp_m pour qu'elle est une distribution normale
 
-table(DATA$t2p)
-
+DATA$time_last_exp_m_norm<-log10(DATA$time_last_exp_m)
 
 DATA2<-DATA[!is.na(DATA$t235),]
 

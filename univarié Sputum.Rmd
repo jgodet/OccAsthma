@@ -217,7 +217,13 @@ logNM(data$laba_sic)
 ### logseverite GINA
 
 ```{r}
-logNM(data$ics_w_gina)
+logNM(data$ics_sic_gina)
+```
+### utilisation ics
+
+```{r}
+
+logNM(data$ics_sic)
 ```
 
 ###logleukotriène
@@ -281,7 +287,7 @@ logNM(data$exa_2)
 ###délai avant test d'expo
 
 ```{r}
-logNM(data$time_last_exp_m)
+logNM(data$time_last_exp_m_norm)
 ```
 
 ###VEMS

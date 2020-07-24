@@ -1,5 +1,5 @@
 ---
-title: "t2t analyse descriptives univariées"
+title: "Analyse t2t"
 author: "Nicolas Migueres"
 date: "17/07/2020"
 output: html_document
@@ -14,6 +14,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
+library('ggpubr')
+library('moments')
+library('VIM')
 library("FactoMineR")
 library( "factoextra")
 library("MASS")
@@ -33,6 +36,7 @@ library("tidyr")
 library("naniar")
 library("dplyr")
 library('car')
+library('mice')
 
 
 
@@ -73,7 +77,7 @@ summary(dat2t$t2t)
 
 ```
 
-## analyse descriptive bivarié et doonées manquante
+## analyse descriptive bivarié et doonées manquante 
 
 ```{r}
 dat2tna<-dat2t[!is.na(dat2t$t2t),]
@@ -107,11 +111,12 @@ clinique: pas de différecne en terme de toux, sifflement, serrement, crachat, r
 plus de dysphonie chez les non T2
 plus d'IgE spécifique chez les T2
 
-thérapeutique: plus d'utilisation de SABA, laba ics, severity asthma gina w et sic
+thérapeutique: plus d'utilisation de SABA_sic, laba_sic, ics_sic, severity asthma gina w et sic
 
 délai dernière exposition plus faible chez les T2
 
-EFR: FEV1 plus faible et plus d'obstruction, plus sévère ATS
+EFR: FEV1 plus faible et plus d'obstruction, plus sévère ATS, plus d'hyperréactivité bronchique, différence entre les type de réaction
+
 
 
 ## analyse logistique univariée (fin ligne 426)
@@ -444,16 +449,29 @@ logNM(a=dat2t$baseline_fev10)
 Variable avec une association à 0,1 en logistique univarié:
 BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, lama_w,baseline fev1, severity_ats,nsbh.res
 
-### time_last_exp_m
+### time_last_exp_m: transformation
 
 ```{r}
+
+ggdensity(dat2t, x = "time_last_exp_m", fill = "lightgray", title = "Délai") +
+  scale_x_continuous(limits = c(-50, 100)) +
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+skewness(dat2t$time_last_exp_m, na.rm = TRUE)
 hist(dat2t$time_last_exp_m,breaks = 500)
 qqnorm(dat2t$time_last_exp_m)
 qqline(dat2t$time_last_exp_m)
-dat2t$time_last_exp_m_norm<-log(dat2t$time_last_exp_m)
+dat2t$time_last_exp_m_norm<-log10(dat2t$time_last_exp_m)
+ggdensity(dat2t, x = "time_last_exp_m_norm", fill = "lightgray", title = "Délai") +
+  scale_x_continuous(limits = c(-50, 50)) +
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+skewness(dat2t$time_last_exp_m_norm,na.rm=TRUE)
 hist(dat2t$time_last_exp_m_norm,breaks = 500)
 qqnorm(dat2t$time_last_exp_m_norm)
 qqline(dat2t$time_last_exp_m_norm)
+
+logNM(dat2t$time_last_exp_m_norm)
 ```
 
 
@@ -465,13 +483,13 @@ qqline(dat2t$time_last_exp_m_norm)
 BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, ,baseline fev1, severity_ats,nsbh.res
 
 
-### modèle complet (9 variables 283 évènements)
+### modèle complet (11 variables 213 évènements)
 ```{r}
 
 
-dat2treg1<-dat2t%>%drop_na(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats)
+dat2treg1<-dat2t%>%drop_na(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm,ics_sic)
 
-mod1<-glm(t2t~bmi+wheezing_w+dysphonia_w+laba_sic+saba_sic+baseline_fev10+nsbh.res+severity_ats,data=dat2treg1,family = binomial)
+mod1<-glm(t2t~bmi+wheezing_w+dysphonia_w+laba_sic+saba_sic+baseline_fev10+nsbh.res+severity_ats+time_last_exp_m_norm+ics_sic,data=dat2treg1,family = binomial)
 summary(mod1)
 tbl_regression(mod1,exponentiate = TRUE)
 ggcoef(mod1)
@@ -488,17 +506,17 @@ stepAIC(mod1)
 
 ```{r}
 
-mod2<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res,data = dat2treg1,family=binomial)
+mod2<-glm(t2t~dysphonia_w+bmi+time_last_exp_m_norm+saba_sic+laba_sic+nsbh.res,data = dat2treg1,family=binomial)
 summary(mod2)
 tbl_regression(mod2,exponentiate = TRUE)
 ggcoef(mod2,exponentiate = TRUE)
 vif(mod2)
 ```
-Modèle optimal avec données manquantes que pour les variables finales (passage de 571 sujets à 1247)
+Modèle optimal avec données manquantes que pour les variables finales (passage de 570 sujets à 623)
 
 ```{r}
-dat2treg2<-dat2t%>%drop_na(dysphonia_w,bmi,laba_sic,saba_sic,nsbh.res,t2t)
-mod3<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res,data = dat2treg2,family=binomial)
+dat2treg2<-dat2t%>%drop_na(dysphonia_w,bmi,laba_sic,saba_sic,nsbh.res,t2t,time_last_exp_m_norm)
+mod3<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res+time_last_exp_m_norm,data = dat2treg2,family=binomial)
 summary(mod2)
 tbl_regression(mod3,exponentiate = TRUE)
 ggcoef(mod3,exponentiate = TRUE)
@@ -506,22 +524,68 @@ vif(mod3)
 
 ```
 
-##analyse en composante principale concernant les 9 variables du modèle complet
+##analyse en composante principale concernant les 11 variables du modèle complet
+
+
+
+###implémentation entre le modèle finale et le modèle complet
 
 ```{r}
+datmice<-dat2t%>%select(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,ics_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm)%>%
+  drop_na(saba_sic,nsbh.res,dysphonia_w,laba_sic,bmi,t2t,time_last_exp_m_norm)
+
+aggr_plot <- aggr(datmice, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(data), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+tempData <- mice(datmice,m=5,maxit=50,meth='pmm',seed=500)
+summary(tempData)
 
 
-datPCA<-dat2t%>%select(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats)
-datPCAna<-na.omit(datPCA)
-qualiVect<-datPCAna%>%select(t2t,wheezing_w,dysphonia_w,laba_sic,saba_sic,nsbh.res,severity_ats)
-
-res.PCA<-PCA(datPCAna,scale.unit=TRUE,quali.sup = c(1,3,4,5,6,8,9), )
-summary(res.PCA)
-
-fviz_pca_ind (res.PCA,geom.ind  = "point",geom.var="text",habillage = c("t2t","dysphonia_w","nsbh.res","saba_sic","severity_ats","laba_sic"),addEllipses = TRUE,repel=TRUE)
-fviz_contrib(res.PCA, choice = "ind", axes = 1:2)
+completedData <- complete(tempData,1)
 
 
+#transformation en variable numérique
+mutate(.data=completedData,saba_sic=case_when(
+  saba_sic=="yes"~"1",
+  saba_sic=="no"~"0"),
+  dysphonia_w=case_when(
+    dysphonia_w=="yes"~"1",
+  dysphonia_w=="no"~"0"),
+  laba_sic=case_when(
+     laba_sic=="yes"~"1",
+  laba_sic=="no"~"0"),
+  severity_ats=case_when(
+      severity_ats=="yes"~"1",
+  severity_ats=="no"~"0"),
+  nsbh.res=case_when(
+    nsbh.res=="negative"~"1",
+    nsbh.res=="mild"~"2",
+    nsbh.res=="moderate to severe"~"3"),
+    wheezing_w=case_when(
+      wheezing_w=="yes"~"1",
+      wheezing_w=="no"~"0"), 
+    ics_sic=case_when(
+      ics_sic=="yes"~"1",
+      ics_sic=="non"~"0")
+)
 
+completedData[sapply(completedData, is.factor)] <- lapply(completedData[sapply(completedData, is.factor)],as.numeric)
+
+
+res2<-PCA(completedData,ind.sup = c(22, 173, 232, 245, 254, 261, 267, 300, 313, 350, 455, 474, 484, 501, 502, 504, 505, 506, 508, 523, 524, 525, 528, 529,581, 582, 583, 588, 590, 591, 596, 598, 600, 603, 604, 605, 607, 608, 609, 611, 612, 613, 614, 616, 618, 619,5,41,107,135,137,187),scale.unit = TRUE,graph=FALSE)
+
+fviz_pca_var(res2,repel=TRUE,col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"))
+var <- get_pca_var(res2)
+library("corrplot")
+corrplot(var$contrib, is.corr=FALSE)
+fviz_pca_ind(res2,repel = TRUE, geom.ind = "point",col.ind = "blue",col.ind.sup = "red")
+
+cor.test(completedData$nsbh.res,completedData$t2t)
 ```
+
+
+Il semblerait que les valeurs implémentées se distribuent de façon aléatoire sur les deux premières dimensions de l'analyse en composante principale. 
+On pourrait donc emettre l'hypothèse que les données manquante sont de MNAR (dépendante de leur valeur propre) et non MAR (dépendente de variable connues)
+Cepandant le cos 2 de chaque variables étudiées est faible, et la variance expliquée par les deux premières dimensions sont médiocres.
+Cela peut être expliqué par la transformation de variable quantitative et variable quantitative dont pourrait décourdre une perte d'information.
 
