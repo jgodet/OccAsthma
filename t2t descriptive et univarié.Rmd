@@ -204,6 +204,14 @@ logNM(dat2t$asthma_delay)
 logNM(dat2t$asthma_work_time)
 ```
 
+###log asthma control
+
+```{r}
+
+logNM(dat2t$asthma_control_sic)
+```
+
+
 
 ###logsinusite
 
@@ -405,23 +413,6 @@ logNM(dat2t$airway_obstruction)
 logNM(dat2t$nsbh.res)
 ```
 
-###logréaction précoce isolée
-```{r}
-logNM(dat2t$only_early)
-```
-
-###réaction mixte
-
-```{r}
-logNM(dat2t$early_late)
-```
-
-###réaction tardive seule
-
-```{r}
-
-logNM(dat2t$only_late)
-```
 
 ###logchangement d'hyperréactivité bronchique supérieur à 2
 
@@ -440,6 +431,8 @@ logNM(dat2t$severity_ats)
 logNM(dat2t$airway_obstruction)
 
 ```
+
+
 ```{r}
 
 logNM(a=dat2t$baseline_fev10)
@@ -449,47 +442,41 @@ logNM(a=dat2t$baseline_fev10)
 Variable avec une association à 0,1 en logistique univarié:
 BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, lama_w,baseline fev1, severity_ats,nsbh.res
 
-### time_last_exp_m: transformation
+### Logtime_last_exp_m_norm
 
 ```{r}
 
-ggdensity(dat2t, x = "time_last_exp_m", fill = "lightgray", title = "Délai") +
-  scale_x_continuous(limits = c(-50, 100)) +
-  stat_overlay_normal_density(color = "red", linetype = "dashed")
-
-skewness(dat2t$time_last_exp_m, na.rm = TRUE)
-hist(dat2t$time_last_exp_m,breaks = 500)
-qqnorm(dat2t$time_last_exp_m)
-qqline(dat2t$time_last_exp_m)
-dat2t$time_last_exp_m_norm<-log10(dat2t$time_last_exp_m)
-ggdensity(dat2t, x = "time_last_exp_m_norm", fill = "lightgray", title = "Délai") +
-  scale_x_continuous(limits = c(-50, 50)) +
-  stat_overlay_normal_density(color = "red", linetype = "dashed")
-
-skewness(dat2t$time_last_exp_m_norm,na.rm=TRUE)
-hist(dat2t$time_last_exp_m_norm,breaks = 500)
-qqnorm(dat2t$time_last_exp_m_norm)
-qqline(dat2t$time_last_exp_m_norm)
-
 logNM(dat2t$time_last_exp_m_norm)
 ```
+Asthma control
 
+```{r}
+logNM(dat2t$asthma_control_w)
+```
+
+Exacerbation nb
+
+```{r}
+logNM(dat2t$exacerbation_w_n)
+```
 
 
 
 ###analyse multivariée
 
 
-BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic, ,baseline fev1, severity_ats,nsbh.res
+BMI, asthma delay, wheezing, dysphonia_w, saba_sic, laba_sic,ics_sic ,baseline fev1, severity_ats,nsbh.res,exacerbation_w_n
+
+Forte corrélation entre ICS_sic et laba_sic donc abandon de la variable laba_sic
 
 
-### modèle complet (11 variables 213 évènements)
+### modèle complet (12 variables 213 évènements)
 ```{r}
 
 
-dat2treg1<-dat2t%>%drop_na(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm,ics_sic)
+dat2treg1<-dat2t%>%drop_na(t2t,bmi,wheezing_w,dysphonia_w,asthma_control_w,saba_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm,ics_sic,exacerbation_w_n)
 
-mod1<-glm(t2t~bmi+wheezing_w+dysphonia_w+laba_sic+saba_sic+baseline_fev10+nsbh.res+severity_ats+time_last_exp_m_norm+ics_sic,data=dat2treg1,family = binomial)
+mod1<-glm(t2t~bmi+wheezing_w+dysphonia_w+saba_sic+asthma_control_w+baseline_fev10+nsbh.res+severity_ats+time_last_exp_m_norm+ics_sic+exacerbation_w_n,data=dat2treg1,family = binomial)
 summary(mod1)
 tbl_regression(mod1,exponentiate = TRUE)
 ggcoef(mod1)
@@ -506,21 +493,22 @@ stepAIC(mod1)
 
 ```{r}
 
-mod2<-glm(t2t~dysphonia_w+bmi+time_last_exp_m_norm+saba_sic+laba_sic+nsbh.res,data = dat2treg1,family=binomial)
+mod2<-glm(t2t~dysphonia_w+bmi+time_last_exp_m_norm+ics_sic+saba_sic+nsbh.res,data = dat2treg1,family=binomial)
 summary(mod2)
 tbl_regression(mod2,exponentiate = TRUE)
 ggcoef(mod2,exponentiate = TRUE)
 vif(mod2)
 ```
-Modèle optimal avec données manquantes que pour les variables finales (passage de 570 sujets à 623)
+Modèle optimal avec données manquantes que pour les variables finales (passage de 564 sujets à 623)
 
 ```{r}
-dat2treg2<-dat2t%>%drop_na(dysphonia_w,bmi,laba_sic,saba_sic,nsbh.res,t2t,time_last_exp_m_norm)
-mod3<-glm(t2t~dysphonia_w+bmi+saba_sic+laba_sic+nsbh.res+time_last_exp_m_norm,data = dat2treg2,family=binomial)
+dat2treg2<-dat2t%>%drop_na(dysphonia_w,bmi,saba_sic,nsbh.res,t2t,time_last_exp_m_norm)
+mod3<-glm(t2t~dysphonia_w+bmi+saba_sic+ics_sic+nsbh.res+time_last_exp_m_norm,data = dat2treg2,family=binomial)
 summary(mod2)
 tbl_regression(mod3,exponentiate = TRUE)
 ggcoef(mod3,exponentiate = TRUE)
 vif(mod3)
+plot(mod3)
 
 ```
 
@@ -531,8 +519,8 @@ vif(mod3)
 ###implémentation entre le modèle finale et le modèle complet
 
 ```{r}
-datmice<-dat2t%>%select(t2t,bmi,wheezing_w,dysphonia_w,laba_sic,saba_sic,ics_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm)%>%
-  drop_na(saba_sic,nsbh.res,dysphonia_w,laba_sic,bmi,t2t,time_last_exp_m_norm)
+datmice<-dat2t%>%select(t2t,bmi,wheezing_w,dysphonia_w,saba_sic,ics_sic,baseline_fev10,nsbh.res,severity_ats,time_last_exp_m_norm,exacerbation_w_n)%>%
+  drop_na(saba_sic,nsbh.res,dysphonia_w,bmi,t2t,time_last_exp_m_norm)
 
 aggr_plot <- aggr(datmice, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(data), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
 
@@ -550,9 +538,6 @@ mutate(.data=completedData,saba_sic=case_when(
   dysphonia_w=case_when(
     dysphonia_w=="yes"~"1",
   dysphonia_w=="no"~"0"),
-  laba_sic=case_when(
-     laba_sic=="yes"~"1",
-  laba_sic=="no"~"0"),
   severity_ats=case_when(
       severity_ats=="yes"~"1",
   severity_ats=="no"~"0"),

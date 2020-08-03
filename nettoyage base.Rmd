@@ -20,7 +20,8 @@ library(readxl)
 DATA<- read_excel(path="EAACI - Occupational Asthma - all DATAbases 2006-2018 - 1518-Nicolas.xlsx",sheet=1,na=c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available","","not available","not avaiable","no available", "not avaliable","nd","not performed","not avalaible","not applicable (not removed)","not applicable","Not applicable","Not available"),col_names = TRUE)
 
 DATAREF<-DATA
-
+library('ggpubr')
+library('moments')
 library("kableExtra")
 library("tableone")
 library('stringr')
@@ -32,6 +33,7 @@ library("wesanderson")
 library("lmtest")
 library("tidyr")
 library("naniar")
+library(dplyr)
 
 #nettoyage de la base de donnee
 
@@ -275,21 +277,42 @@ DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
 
 
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
-
-DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
-
-
 DATA$ics_w_gina<-tolower(DATA$ics_w_gina)
-
-###création nouvelle variable t250: critère T2 pour eo sang 400, feno 50 et eo crachat 3
-
-DATA$t250 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 50 | DATA$blood_eosino >= 400 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 50 & DATA$blood_eosino < 400 & DATA$eosino_pre_sic < 3, 0, NA)))
-
 
 DATA$rhinitis_onset<-ifelse(test = DATA$onset_of_rhinitis_w=="before","before","not before")
 
 DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
 DATA$severity_asthma_gina_sic<-factor(DATA$severity_asthma_gina_sic,c("no treatment","mild","moderate","severe"))
+
+#création de la variable t235 
+
+DATA$t235 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_pre_sic < 3, 0, NA)))
+
+#création des variable t235p pour les critère post sic (feno et sputum)
+DATA$t235p <- ifelse(is.na(DATA$feno_post_24_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_post_sic), NA, ifelse(DATA$feno_post_24_sic >= 35 | DATA$blood_eosino >= 300 | DATA$eosino_post_sic >=3, 1, ifelse(DATA$feno_post_24_sic < 35 & DATA$blood_eosino < 300 & DATA$eosino_post_sic < 3, 0, NA)))
+
+
+
+
+###création nouvelle variable t250: critère T2 pour eo sang 400, feno 50 et eo crachat 3
+
+DATA$t250 <- ifelse(is.na(DATA$feno_pre_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_pre_sic), NA, ifelse(DATA$feno_pre_sic >= 50 | DATA$blood_eosino >= 400 | DATA$eosino_pre_sic >=3, 1, ifelse(DATA$feno_pre_sic < 50 & DATA$blood_eosino < 400 & DATA$eosino_pre_sic < 3, 0, NA)))
+
+# création de la variable t250p 
+DATA$t250p <- ifelse(is.na(DATA$feno_post_24_sic) & is.na(DATA$blood_eosino) & is.na(DATA$eosino_post_sic), NA, ifelse(DATA$feno_post_24_sic >= 50 | DATA$blood_eosino >= 400 | DATA$eosino_post_sic >=3, 1, ifelse(DATA$feno_post_24_sic < 50 & DATA$blood_eosino < 400 & DATA$eosino_post_sic < 3, 0, NA)))
+
+# création de la variable t2tp 
+t2pVec <- c(rep(NA, length(DATA$eosino_post_sic.3)))
+t2pVec[DATA$eosino_post_sic.3 == 'yes'] <- 1
+t2pVec[DATA$eosino_post_sic.3 == 'no'] <- 0
+t2pVec[is.na(DATA$eosino_post_sic.3) & (DATA$blood_eosino_400 == 'no' & DATA$feno_post_sic.50 == 'no')] <- 0
+t2pVec[is.na(DATA$eosino_post_sic.3) &(DATA$blood_eosino_400 =='yes'& DATA$feno_post_sic.50 =='yes')]<-1
+t2pVec[is.na(DATA$eosino_post_sic.3) &(DATA$blood_eosino_400 =='no'& DATA$feno_post_sic.50 =='yes')]<-1
+t2pVec[is.na(DATA$eosino_post_sic.3) &(DATA$blood_eosino_400 =='yes'& DATA$feno_post_sic.50 =='no')]<-1
+table(t2pVec)
+DATA$t2tp<-t2pVec
+summary(DATA$t2tp)
+
 
 DATA$blood_eosino_400<-ifelse(DATA$blood_eosino>=400,"yes","no")
 table
@@ -298,6 +321,66 @@ table
 
 DATA$time_last_exp_m_norm<-log10(DATA$time_last_exp_m)
 
+#création variable exacerbation_w_n, variable numérique avec comme approximation un résultat d'exacerbation codé 9 pour ceux qui présentent plus de 9 exacerbation
+
+
+DATA$exacerbation_w<-as.character(DATA$exacerbation_w)
+
+DATA$exacerbation_w_n<-DATA$exacerbation_w
+
+ DATA<-mutate(.data = DATA,
+        exacerbation_w_n=
+          case_when(exacerbation_w_n=="9 or more"~"9",
+                    exacerbation_w_n!="9 or more"~exacerbation_w))
+
+DATA$exacerbation_w_n<-as.numeric(DATA$exacerbation_w_n)
+
+ggdensity(DATA, x = "exacerbation_w_n", fill = "lightgray", title = "Délai") +
+  scale_x_continuous(limits = c(-50, 100)) +
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+skewness(DATA$exacerbation_w_n, na.rm = TRUE)
+hist(DATA$exacerbation_w_n)
+qqnorm(DATA$exacerbation_w_n)
+qqline(DATA$exacerbation_w_n)
+
+
+#DATA$exacerbation_w_norm<-log10(DATA$exacerbation_w_n)
+
+
+#ggdensity(DATA, x = "exacerbation_w_norm", fill = "lightgray", title = "Délai") +
+ # scale_x_continuous(limits = c(-50, 100)) +
+  #stat_overlay_normal_density(color = "red", linetype = "dashed")
+#
+#skewness(DATA$exacerbation_w_norm, na.rm = TRUE)
+
+#création d'une variable normalisé pour Time_last_exp
+
+ggdensity(DATA, x = "time_last_exp_m", fill = "lightgray", title = "Délai") +
+  scale_x_continuous(limits = c(-50, 100)) +
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+skewness(DATA$time_last_exp_m, na.rm = TRUE)
+hist(DATA$time_last_exp_m,breaks = 500)
+qqnorm(DATA$time_last_exp_m)
+qqline(DATA$time_last_exp_m)
+DATA$time_last_exp_m_norm<-log10(DATA$time_last_exp_m)
+ggdensity(DATA, x = "time_last_exp_m_norm", fill = "lightgray", title = "Délai") +
+  scale_x_continuous(limits = c(-50, 50)) +
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+skewness(DATA$time_last_exp_m_norm,na.rm=TRUE)
+hist(DATA$time_last_exp_m_norm,breaks = 500)
+qqnorm(DATA$time_last_exp_m_norm)
+qqline(DATA$time_last_exp_m_norm)
+
+##création de la variable feno_post_sic.50 codé "yes", " no"
+
+DATA$feno_post_sic.50<-ifelse(DATA$feno_post_24_sic>=50,"yes","no")
+
+##Création des nouveaux data.frame
+
+ 
 DATA2<-DATA[!is.na(DATA$t235),]
 
 DATA3<-DATA[!is.na(DATA$t250),]
@@ -332,11 +415,18 @@ missmap(DATA2, main = "Missing values vs observed")
 
 ###analyse descriptive sur l'ensemble de la population sur la répartition en catégorie d'agent
 
+
+####Prick test par agent
 ```{r}
-#prick
+
 by(DATA$prick_test,DATA$agent_category,summary)
 
-#Ige Spécifique
+
+```
+
+####Ige Spécifique par agent
+```{r}
+
 by(DATA$specific_ige,DATA$agent_category,summary)
 
 ```

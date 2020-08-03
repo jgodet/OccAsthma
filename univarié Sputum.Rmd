@@ -284,6 +284,13 @@ logNM(data$severity_asthma_step_w)
 logNM(data$exa_2)
 ```
 
+###ige mediated
+
+```{r}
+
+logNM(data$ige_mediated_oa)
+```
+
 ###délai avant test d'expo
 
 ```{r}
@@ -301,6 +308,13 @@ logNM(data$baseline_fev1)
 ```{r}
 logNM(data$fev1_fvc)
 ```
+### log asthma_control
+```{r}
+
+logNM(data$asthma_control_sic)
+```
+
+
 
 ###logobstruction bronchique
 
@@ -313,24 +327,6 @@ logNM(data$airway_obstruction)
 logNM(data$nsbh.res)
 ```
 
-###logréaction précoce isolée
-```{r}
-logNM(data$only_early)
-```
-
-###réaction mixte
-
-```{r}
-logNM(data$early_late)
-```
-
-###réaction tardive seule
-
-```{r}
-
-logNM(data$only_late)
-```
-
 ###logchangement d'hyperréactivité bronchique supérieur à 2
 
 ```{r}
@@ -339,6 +335,11 @@ logNM(data$nsbh_sic_max_ratio)
 ###Séverité ATS
 ```{r}
 logNM(data$severity_ats)
+```
+
+Log exacerbation
+```{r}
+logNM(data$exacerbation_w_n)
 ```
 
 

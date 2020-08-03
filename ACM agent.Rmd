@@ -1,0 +1,100 @@
+---
+title: "ACM agents"
+author: "Nicolas Migueres"
+date: "30/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(readr)
+library('ggpubr')
+library('moments')
+library('VIM')
+library("FactoMineR")
+library( "factoextra")
+library("MASS")
+library("gtsummary")
+library("GGally")
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library('car')
+library('mice')
+
+```
+
+
+```{r}
+datagen <- read_delim("DATAclean2.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+##création de variables dichotomiques pour les catégories d'agent: agige = Ige médié; agah= acide anhydride; agqac= ammonium quaternaire et autres produit de ménage; agper= sel de persulfate; agacr= acrylate; agmet= métaux et liquides dérivés de métaux et soudage ; agiso= isocyanate; aglw= autres LMW 
+ 
+```{r}
+
+
+
+datagen$agige<- c(rep('no', length(datagen$agent_category)))
+datagen$agige[datagen$agent_category=='cow dander'|datagen$agent_category=='drugs'| datagen$agent_category=='fish/seafood'| datagen$agent_category=='enzymes'| datagen$agent_category=='flour/grains'|datagen$agent_category=='insects and derived products'| datagen$agent_category=='latex'| datagen$agent_category=='moulds' | datagen$agent_category=='ornemental plants'|datagen$agent_category=='rodents'| datagen$agent_category=='soybean flour'| datagen$agent_category=='spices' | datagen$agent_category=='storage mites'| datagen$agent_category=='various animals and derived products' | datagen$agent_category=='various plant-derived products'| datagen$agent_category== 'vegetal gums' | datagen$agent_category== 'wood dusts' ] <- 'yes'
+
+
+datagen$agah<-c(rep('no',length(datagen$agent_category)))
+datagen$agah[datagen$agent_category=='epoxy resins' | datagen$agent_category=='acid anhydrides']<-'yes'
+
+datagen$agqac<-rep('no',length(datagen$agent_category))
+datagen$agqac[datagen$agent_category=='aldehydes'|datagen$agent_category=='quaternary ammonium' |datagen$agent_category=='cleaning products/disinfectants'| datagen$agent_category=='amines' ]<- 'yes'
+
+datagen$agper<-c(rep('no',length(datagen$agent_category)))
+datagen$agper[datagen$agent_category=='persulfate salts']<-'yes'
+
+datagen$agacr<-c(rep('no',length(datagen$agent_category)))
+datagen$agacr[datagen$agent_category=='acrylates']<-'yes'
+
+datagen$agiso<-c(rep('no',length(datagen$agent_category)))
+datagen$agiso[datagen$agent_category=='isocyanates']<-'yes'
+
+datagen$agmet<-c(rep('no',length(datagen$agent_category)))
+datagen$agmet[datagen$agent_category=='metal working fluids' | datagen$agent_category=='metals' | datagen$agent_category== 'welding'] <-'yes'
+
+datagen$aglw<-c(rep('no',length(datagen$agent_category)))
+datagen$aglw[datagen$agent_category=='styrene' | datagen$agent_category=='resins/glues/paints-nos' | datagen$agent_category== 'reactive dye' | datagen$agent_category=='colophony' | datagen$agent_category=='lmw other'| datagen$agent_category== 'non-identified sensitizer' ] <-'yes'
+
+
+datagen$type_reaction <- ordered(datagen$type_reaction, levels=c("no reaction","isolated early", "isolated late","dual"))
+
+```
+
+# Variables concervées pour l'analyse ACM: eosino_pre_sic, saba_sic, ics_sic, nsbh_res, severity_ats, hmw.lmw, type reaction
+
+```{r}
+datag<-datagen%>%select(c(agige,agah,agmet,aglw,agacr,agper,agiso,agqac,eosino_pre_sic.3,hmw.lmw,nsbh.res,saba_sic,ics_sic,nsbh.res,severity_ats,type_reaction))
+
+aggr_plot <- aggr(datag, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(datag), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+datag<-datag%>%drop_na()
+
+acmag<-MCA(datag,graph=FALSE)
+
+summary(acmag)
+
+require(explor)
+explor(acmag)
+
+```
+
