@@ -279,6 +279,9 @@ DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
 DATA$rhinitis_sx_sic<-tolower(DATA$rhinitis_sx_sic)
 DATA$ics_w_gina<-tolower(DATA$ics_w_gina)
 
+DATA$ics_sic_gina<-tolower(DATA$ics_sic_gina)
+DATA$ics_sic_gina[DATA$ics_sic_gina=="low"]<-"mild"
+
 DATA$rhinitis_onset<-ifelse(test = DATA$onset_of_rhinitis_w=="before","before","not before")
 
 DATA$nsbh.res<-factor(DATA$nsbh.res,c("negative","mild","moderate to severe"))
@@ -378,6 +381,11 @@ qqline(DATA$time_last_exp_m_norm)
 
 DATA$feno_post_sic.50<-ifelse(DATA$feno_post_24_sic>=50,"yes","no")
 
+#change_eosino.2: augmentation de 2% de l'éosinophilie dans les crachats
+DATA<-mutate(DATA,change_eosino.2=case_when(
+  change_eosino>=2~"yes",
+  change_eosino<2~"no"
+))
 ##Création des nouveaux data.frame
 
  

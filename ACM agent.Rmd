@@ -98,3 +98,14 @@ explor(acmag)
 
 ```
 
+```{r}
+tabMat <- tab.disjonctif(datagen$agent_category)
+colnames(tabMat) <- levels(as.factor(datagen$agent_category))
+#check
+apply(tabMat,MARGIN = 2, FUN=sum)
+
+qui <- which(apply(tabMat,MARGIN = 2, FUN=sum) <10)
+tabMat <- tabMat[,-qui]
+
+```
+
