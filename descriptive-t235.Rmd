@@ -40,12 +40,12 @@ data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)],as.f
 
 ```{r}
 
-table(data$t235)
+data$hmw.lmw<-factor(data$hmw.lmw,c("LMW","HMW"))
 
 
 ```
 ```{r}
-varshort<-names(data)[!names(data)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value" )]
+varshort<-names(data)[!names(data)%in%c("t235","poor sx control","airway ob","agent_category","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value" )]
 ```
 
 ```{r}

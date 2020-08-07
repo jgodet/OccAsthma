@@ -1,0 +1,231 @@
+---
+title: "Analyse univariée"
+author: "Nicolas Migueres"
+date: "07/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(prettyR)
+library(dplyr)
+library(VIM)
+library(cowplot)
+library(tidyverse)
+library(lubridate)
+library(pander)
+library('tableone')
+library('dplyr')
+library('kableExtra')
+Univ<-read.csv("dataClean2.csv",sep=";")
+```
+
+```{r}
+
+for(var in names(Univ)){
+  if(is.numeric(Univ[,var])&all(levels(as.factor(Univ[,var]))%in%c(0,1))){
+    Univ[,var]<-factor(Univ[,var],levels=c(0,1),labels=c("Non","Oui"))
+  }
+}
+
+var.qual<-NULL
+var.quant<-NULL
+for(var in names(Univ)){
+  if(is.numeric(Univ[,var])){
+    var.quant<-c(var.quant,var)
+  }
+  if(is.factor(Univ[,var] ) | is.character(Univ[,var])){
+    var.qual<-c(var.qual,var)
+  }
+}
+var.qual<-var.qual[-c(1,2,3,4,5,121,122,123,124,125)]
+var.quant<-var.quant[-c(1,3,4)]
+
+
+```
+
+
+```{r}
+histogramme<-function(base,var1,couleur="#3A8EBA",xlab){
+  ggplot(base,aes_string(x = var1))+geom_histogram(fill=couleur,color="white",bins = max(7,min(length(levels(as.factor(base[,var1])))/3,33)))+theme_classic()+ylab("Effectif")+xlab(xlab)
+}
+
+barplottt<-function(base,var1,couleur="#3A8EBA",xlab){
+  ggplot(base,aes_string(x=var1))+geom_bar(fill=couleur)+theme_classic()+ylab("Effectif")+xlab(xlab)+geom_text(aes(label=..count..,vjust=ifelse(..count..<30,-2,0),fontface=2),stat = "count",position = position_stack(0.5),size=3)+geom_text(aes(label=paste(round(..count..*100/sum(..count..),1),"%"),vjust=ifelse(..count..<30,-2,0)+2,fontface=2),stat = "count",position = position_stack(0.5),size=3)
+}
+
+descriptif.quali.uni<-function(base,var.quali,nom.var){
+  if(is.null(nom.var))nom.var<-var.quali
+  nom.var.qual<-NULL
+  nom.mod<-NULL
+  freq<-NULL
+  perc<-NULL
+  na.qual<-NULL
+  for(var in var.quali){
+    for(mod in levels(base[,var])){
+      nom.var.qual<-c(nom.var.qual,var)
+      nom.mod<-c(nom.mod,mod)
+      freq<-c(freq,sum(base[,var]==mod,na.rm = TRUE))
+      perc<-c(perc,round((sum(base[,var]==mod,na.rm = TRUE)/(nrow(base)-sum(is.na(base[,var]))))*100,1))
+      na.qual<-c(na.qual,sum(is.na(base[,var])))
+    }
+  }
+  labelvar<-data.frame(var.quali,nom.var)
+  for(i in 1:length(nom.var.qual)){
+    if(nom.var.qual[i]%in%labelvar$var.quali){
+      nom.var.qual[i]<-as.character(labelvar$nom.var[labelvar$var.quali==nom.var.qual[i]])
+    }
+  }
+  tableau<-data.frame(nom.var.qual,nom.mod,freq,perc,na.qual)
+  colnames(tableau)<-c("Nom variable","Modalite","Frequence","Pourcentage","NA")
+  tableau<-filter(tableau,nom.mod!="Non")
+  return(tableau)
+}
+
+descriptif.quanti.uni<-function(base,var.quanti,nom.var=NULL){
+  if(is.null(nom.var))nom.var<-var.quanti
+  moy<-NULL
+  sd<-NULL
+  min<-NULL
+  q1<-NULL
+  med<-NULL
+  q3<-NULL
+  max<-NULL
+  na.quant<-NULL
+  for(var in var.quanti){
+    moy<-c(moy,mean(base[,var],na.rm = TRUE))
+    sd<-c(sd,sd(base[,var],na.rm=TRUE))
+    min<-c(min,min(base[,var],na.rm = TRUE))
+    q1<-c(q1,quantile(probs=0.25,base[,var],na.rm = TRUE))
+    med<-c(med,quantile(probs=0.5,base[,var],na.rm = TRUE))
+    q3<-c(q3,quantile(probs=0.75,base[,var],na.rm = TRUE))
+    max<-c(max,max(base[,var],na.rm = TRUE))
+    na.quant<-c(na.quant,sum(is.na(base[,var])))  
+  }
+  tableau<-data.frame(nom.var,moy,sd,min,q1,med,q3,max,na.quant)
+  for(j in 2:8){tableau[,j]<-round(tableau[,j],3)}
+  colnames(tableau)<-c("Nom Variable","Moyenne","Ecart-type","Min","Q1","Mediane","Q3","Max","NA")
+  return(tableau)
+}
+
+barplott.cr<-function(base,var,var.crois,xlab,nom.leg=var.crois){
+  crois<-table(base[,var],base[,var.crois])%>%as.data.frame()
+  niv<-length(levels(base[,var]))
+  ggplot(crois,aes_string(x="Var2",y="Freq",group="Var1",fill="Var1"))+geom_bar(stat = "identity",position='dodge',col="white")+theme_classic()+ylab("Effectif")+xlab(xlab)+labs(fill=nom.leg)+geom_text(aes_string(label="Freq"),position=position_dodge(width = 1),vjust=-0.5)
+}
+
+boxplott<-function(base,vary,varx,xlab,ylab=vary){
+  ggplot(base,aes_string(x=varx,y=vary,fill=varx))+geom_boxplot()+theme_classic()+xlab(xlab)+ylab(ylab)+geom_jitter(alpha=0.3,width = 0.2,height = 0.1,col="#373F47")
+}
+
+descriptif.quali.biv.test<-function(base,var.quali,var.crois,noms.var,nom.var.crois){
+  base1<-subset(base,base[,var.crois]==levels(base[,var.crois])[1])
+  base2<-subset(base,base[,var.crois]==levels(base[,var.crois])[2])
+  freq1<-c(levels(base[,var.crois])[1],paste("N=",nrow(base1)))
+  freq2<-c(levels(base[,var.crois])[2],paste("N=",nrow(base2)))
+  perc1<-c("","")
+  perc2<-c("","")
+  moda<-c("","")
+  nom.var<-c("",nom.var.crois)
+  pval<-c("","")
+  for(var in var.quali){
+    eff_marg_var1<-table(base[,var])
+    eff_marg_var2<-table(base[,var.crois])
+    eff_theo<-NULL
+    for(i in 1:length(eff_marg_var1)){
+      for(j in 1:2){
+        eff_theo<-c(eff_theo,eff_marg_var1[i]*eff_marg_var2[j]/sum(eff_marg_var1))
+      }
+    }
+    for(mod in levels(base[,var])){
+      nom.var<-c(nom.var,var)
+      moda<-c(moda,mod)
+      na1<-sum(is.na(base1[,var]))
+      na2<-sum(is.na(base2[,var]))
+      freq1<-c(freq1,sum(base1[,var]==mod,na.rm=TRUE))
+      freq2<-c(freq2,sum(base2[,var]==mod,na.rm=TRUE))
+      perc1<-c(perc1,round((sum(base1[,var]==mod,na.rm=TRUE)*100/(nrow(base1)-na1)),1))
+      perc2<-c(perc2,round((sum(base2[,var]==mod,na.rm=TRUE)*100/(nrow(base2)-na2)),1))
+      if(min(eff_theo)>=5){
+        pv<-chisq.test(table(base[,var],base[,var.crois]))
+        pv<-round(pv$p.value,3)
+        pval<-c(pval,pv)
+      }
+      else{
+        pv<-fisher.test(table(base[,var],base[,var.crois]))
+        pv<-round(pv$p.value,3)
+        pval<-c(pval,pv)
+      }
+    }
+  }
+  labelvar<-data.frame(var.quali,noms.var)
+  for(i in 1:length(nom.var)){
+    if(nom.var[i]%in%labelvar$var.quali){
+      nom.var[i]<-as.character(labelvar$noms.var[labelvar$var.quali==nom.var[i]])
+    }
+  }
+  tableau<-data.frame(nom.var,moda,freq1,perc1,freq2,perc2,pval)
+  tableau$pval<-ifelse(as.character(tableau$pval)==0,"<0.001",as.character(tableau$pval))
+  colnames(tableau)<-c("Nom variable","Modalite","Frequence","Pourcentage","Frequence.","Pourcentage.","P-valeur")
+  tableau<-filter(tableau,moda!="Non")
+  return(tableau)
+}
+descriptif.quanti.biv.nnorm.test<-function(base,var.quanti,var.crois,noms.var,nom.var.crois){
+  base1<-subset(base,base[,var.crois]==levels(base[,var.crois])[1])
+  base2<-subset(base,base[,var.crois]==levels(base[,var.crois])[2])
+  med1<-c(levels(base[,var.crois])[1],paste("N=",nrow(base1)))
+  med2<-c(levels(base[,var.crois])[2],paste("N=",nrow(base2)))
+  q11<-c("","")
+  q31<-c("","")
+  q12<-c("","")
+  q32<-c("","")
+  noms.var<-c("",nom.var.crois,noms.var)
+  pval<-c("","")
+  for(var in var.quanti){
+    med1<-c(med1,round(median(base1[,var],na.rm=TRUE),3))
+    med2<-c(med2,round(median(base2[,var],na.rm=TRUE),3))
+    q11<-c(q11,round(quantile(base1[,var],probs=0.25,na.rm=TRUE),3))
+    q12<-c(q12,round(quantile(base2[,var],probs=0.25,na.rm=TRUE),3))
+    q31<-c(q31,round(quantile(base1[,var],probs=0.75,na.rm=TRUE),3))
+    q32<-c(q32,round(quantile(base2[,var],probs=0.75,na.rm=TRUE),3))
+    test<-wilcox.test(base[,var]~base[,var.crois])
+    pval<-c(pval,round(test$p.value,3))
+  }
+  tableau<-data.frame(noms.var,med1,q11,q31,med2,q12,q32,pval)
+  tableau$pval<-ifelse(as.character(tableau$pval==0),"<0.001",as.character(tableau$pval))
+  colnames(tableau)<-c("Nom variable","Mediane","Q1","Q3","Mediane.","Q1.","Q3.","P-valeur")
+  return(tableau)
+}
+```
+
+
+##Variables quantitatives
+```{r,results="asis"}
+tab<-descriptif.quanti.uni(Univ,var.quant)
+pandoc.table(tab)
+```
+```{r,warning=FALSE}
+graph<-NULL
+for(var in var.quant){
+  graph[[var]]<-histogramme(df,var,xlab=var)
+}
+plot_grid(graph[[1]],graph[[2]],graph[[3]],graph[[4]])
+plot_grid(graph[[5]],graph[[6]],graph[[7]],graph[[8]])
+plot_grid(graph[[9]],graph[[10]],graph[[11]],graph[[12]])
+plot_grid(graph[[13]],graph[[14]],graph[[15]],graph[[16]])
+plot_grid(graph[[17]],graph[[18]],graph[[19]],graph[[20]])
+plot_grid(graph[[21]],graph[[22]],graph[[23]],graph[[24]])
+plot_grid(graph[[25]],graph[[26]],graph[[27]],graph[[28]])
+plot_grid(graph[[29]],graph[[30]],graph[[31]],graph[[32]])
+plot_grid(graph[[33]],"","","")
+```
+
+
+
+
+
+

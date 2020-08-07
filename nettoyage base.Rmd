@@ -386,6 +386,10 @@ DATA<-mutate(DATA,change_eosino.2=case_when(
   change_eosino>=2~"yes",
   change_eosino<2~"no"
 ))
+
+#chamgement odre levels pour lecture table one
+
+DATA$hmw.lmw<-factor(DATA$hmw.lmw,c("LMW","HMW"))
 ##Création des nouveaux data.frame
 
  
@@ -436,6 +440,16 @@ by(DATA$prick_test,DATA$agent_category,summary)
 ```{r}
 
 by(DATA$specific_ige,DATA$agent_category,summary)
+
+```
+
+Etude time_last_exp et eosino_pre_sic
+
+```{r}
+plot(DATA$eosino_pre_sic,DATA$time_last_exp_m)
+
+
+cor.test(DATA$time_last_exp_m,DATA$eosino_pre_sic,method = "kendall")
 
 ```
 

@@ -1281,6 +1281,11 @@ vif(logsp)
 
 
 ```{r}
+drop1(logsp,test="Chisq")
+```
+
+
+```{r}
 stepAIC(logsp)
 ```
 
@@ -1303,5 +1308,11 @@ tbl_regression(logspfn,exponentiate = TRUE)
 ggcoef(logspfn,exponentiate = TRUE)
 vif(logspfn)
 plot(logspfn)
+```
+###vérification du modèle:
+
+```{r}
+lgn<-glm(eosino_post_sic.3~1,data=datlgp,family=binomial)
+anova(logspf,lgn,test = "Chisq")
 ```
 

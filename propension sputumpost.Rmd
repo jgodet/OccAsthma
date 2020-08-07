@@ -1,0 +1,213 @@
+---
+title: "Propension sputum pré SIC"
+author: "Nicolas Migueres"
+date: "06/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,message=FALSE,warning=FALSE}
+library(readr)
+library(broom)
+library(gtsummary)
+library(survey)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library("magick")
+library("webshot")
+library("MatchIt")
+library('MASS')
+library(gtsummary)
+library("GGally")
+
+```
+
+```{r,message=FALSE,warning=FALSE}
+df<- read_delim("DATAclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+## Analyse sans score de propension selon SMD
+```{r}
+df$arm <- NA
+df$arm[df$eosino_pre_sic.3== "yes"] <- "T2"
+df$arm[df$eosino_pre_sic.3 == "no"] <- "no T2"
+
+df$arm<-as.factor(df$arm)
+
+df$time_last_exp_dich<- ifelse(df$time_last_exp_m>1,1,0)
+
+var<-c("asthma_pre","asthma_delay", "cough_w", "dyspnea_w", "dysphonia_w", "saba_sic","nsbh.res","severity_ats","time_last_exp_m_norm","ics_sic","exacerbation_w_n")
+
+tabunmatch<-CreateTableOne(vars = var,strata = "arm",data = df,test = FALSE)
+p<-print(tabunmatch,smd=TRUE)
+kable(p, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+##Méthode par appariement par le score de propension
+
+```{r}
+#création du score de propension
+
+datprs<-df%>%select(var,arm)%>% drop_na()
+
+datprs<-mutate(datprs,
+           asthma_pre=case_when(
+             asthma_pre=="yes"~"1",
+             asthma_pre=="no"~"0"
+           ),
+           cough_w=case_when(
+             cough_w=="yes"~"1",
+             cough_w=="no"~"0"
+           ),
+           dyspnea_w=case_when(
+             dyspnea_w=="yes"~"1",
+             dyspnea_w=="no"~"0"
+           ),
+           saba_sic=case_when(
+             saba_sic=="yes"~"1",
+             saba_sic=="no"~"0"
+           ),
+           severity_ats=case_when(
+             severity_ats=="yes"~"1",
+             severity_ats=="no"~"0"
+           ),
+           ics_sic=case_when(
+             ics_sic=="yes"~"1",
+             ics_sic=="no"~"0"
+           ),
+           dysphonia_w=case_when(
+             dysphonia_w=="yes"~"1",
+             dysphonia_w=="no"~"0"
+           ))
+
+datprs[sapply(datprs, is.character)] <- lapply(datprs[sapply(datprs, is.character)],as.factor)
+
+ps<-glm(arm=="T2"~asthma_pre+asthma_delay+ cough_w+ dyspnea_w+ dysphonia_w+ saba_sic+nsbh.res+severity_ats+time_last_exp_m_norm+ics_sic+exacerbation_w_n,data=datprs,family = binomial)
+
+datprs$psvalue <- predict(ps, type = "response")
+
+#appariement des données selon le score de propension, calcul du caliper selon la formule (caliper=0,2*sd logit(ps))
+sd(logit(datprs$psvalue))*0.2
+
+m.nn <- matchit((arm=="T2" ) ~ psvalue , data=datprs,
+                method= "nearest", ratio = 1, caliper =.167)
+
+#summary(m.nn)
+match.data = match.data(m.nn)
+
+matches <- data.frame(m.nn$match.matrix)
+
+# this command saves the data matched
+group1 <- match(row.names(matches), row.names(match.data))
+group2 <- match(matches$X1, row.names(match.data))
+
+match.data$matachID <- NA
+for (i in 1:length(match.data$matachID)){
+  if(!is.na(group1[i])){
+    match.data$matachID[group1[i]] <- i
+    match.data$matachID[group2[i]] <- i
+  }
+}
+match.data$matachID <- factor(match.data$matachID)
+
+## Construct a table
+tabMatched <- CreateTableOne(vars = var, strata = "arm", data = match.data, test = FALSE)
+#print(tabUnmatched, smd = TRUE)
+
+pmsp <- print(tabMatched,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(pmsp, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+
+
+```{r}
+#calcul selon méthode IPW
+
+#calcul des poids
+datprs <- datprs %>%
+   mutate(propensity_glm = predict(ps, type = "response"),
+          weight_glm = 1 / propensity_glm * (arm=="T2" ) + 
+                       1 / (1 - propensity_glm) * (1 - (arm=="T2" )))
+#weighted data
+dataSvy <- svydesign(ids = ~ 1, data= datprs, weights = ~ datprs$weight_glm)
+
+#construct table
+tabWeighted <- svyCreateTableOne(vars = var, strata = "arm", data = dataSvy,test = FALSE)
+
+pws <- print(tabWeighted,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(pws, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+
+```
+
+##analyse du critère sévérité ATS
+###IPW
+
+```{r}
+logitlastipw<-svyglm(severity_ats~arm,design=dataSvy ,family = binomial)
+summary(logitlastipw)
+
+require(gtsummary)
+tbl_regression(logitlastipw, exponentiate = TRUE)
+
+
+```
+
+###match
+```{r}
+lgatsm<-glm(severity_ats~arm, data = match.data,family = binomial)
+summary(lgatsm)
+tbl_regression(lgatsm,exponentiate = TRUE)
+
+loginul<-glm(severity_ats~1,data=match.data,family=binomial)
+anova(lgatsm,loginul,test="Chisq")
+```
+
+
+
+##délai dernière exposition
+
+###ipw
+```{r}
+logitlast<-svyglm(time_last_exp_m_norm~arm,design=dataSvy,family = gaussian)
+summary(logitlast)
+
+library(gtsummary)
+tbl_regression(logitlast, exponentiate = TRUE)
+```
+
+###match
+```{r}
+
+logitlas<-lm(time_last_exp_m_norm~arm,data=match.data)
+summary(logitlas)
+
+library(gtsummary)
+tbl_regression(logitlas, exponentiate = TRUE)
+
+
+```

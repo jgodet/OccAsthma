@@ -1,17 +1,19 @@
 ---
-title: "descriptive-sputum"
+title: "descriptive-sputum pre SIC"
 author: "Nicolas Migueres"
 date: "24/06/2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
-#analyse avec pour critère discriminant le seuil de 3% d'eosinophilie dans les crachats induits.
+# analyse avec pour critère discriminant le seuil de 3% d'eosinophilie dans les crachats induits avant le SIC.
 
 ```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
 
-```{r }
+```{r,warning=FALSE,message=FALSE }
 library('kableExtra')
 library(readr)
 library("kableExtra")
@@ -31,52 +33,35 @@ dtfref<-dtf
 dtf[sapply(dtf, is.character)] <- lapply(dtf[sapply(dtf, is.character)],as.factor)
 
 
+dtf$hmw.lmw<-factor(dtf$hmw.lmw,c("LMW","HMW"))
 
+dtf$asthma_control_sic<-factor(dtf$asthma_control_sic,c("asthma uncontrolled","asthma controlled"))
+dtf$asthma_control_w<-factor(dtf$asthma_control_w,c("asthma uncontrolled","asthma controlled"))
 ```
 
+
 ```{r}
-
-table(dtf$eosino_pre_sic.3)
-
-
-```
-```{r}
-varshort<-names(dtf)[!names(dtf)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3" )]
+varshort<-names(dtf)[!names(dtf)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","agent_category","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3" )]
 ```
 
 
 ```{r}
 tabeo<-CreateTableOne(vars = varshort,strata = "eosino_pre_sic.3",data = dtf,addOverall = TRUE)
 p<-print(tabeo,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
-kable(p[,1:4], booktabs = T,format = "html") %>% 
+kable(p[,1:4], booktabs = T,format = "pipe") %>% 
   row_spec(0,bold=TRUE) %>% 
  
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
  add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
 ```
 
-```{r}
-require(tableone)
- tabOneT2 <- CreateTableOne(vars =varshort,data =dtf,strata = "eosino_pre_sic.3", addOverall = T)
-  p3 <- print(tabOneT2,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
-
-kable(p3[,1:4], booktabs = T) %>%
-  row_spec(0,bold=TRUE) %>%
-   row_spec(1, hline_after = T) %>%
-   row_spec(dim(p3)[1],hline_after = T) %>%
-   kable_styling(latex_options = c("striped","HOLD_position","scale_down"),
-                 stripe_color = "oldlace",
-                 full_width = F) %>%
-  add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
-```
-
+## Cartographie des données manquantes et expression en pourcentage du total des données
 ```{r}
 (sapply(dtf,function(x) sum(is.na(x))))*100/422
 missmap(dtf, main = "Missing values vs observed")
 ```
 
 
-## Creation de fonction
 
 ```{r}
 barplotNM<-function(a,b,c,d,e,f){
@@ -754,73 +739,6 @@ chisq.test(tablat)
 ```
 
 
-###reponse precoce uniquement
-
-```{r}
-#creation de la variable d'interet avec une boucle for
-dtf$only_early<-NULL
-for(i in 1:dim(dtf)[1]){
-  if(is.na(dtf$early_reaction[i]) & is.na(dtf$late_reaction[i])) {
-    dtf$only_early[i] <- NA
-  }
-  if(is.na(dtf$early_reaction[i]) | is.na(dtf$late_reaction[i])) {
-    dtf$only_early[i] <- NA
-  }
-  if( (!is.na(dtf$early_reaction[i]) & !is.na(dtf$late_reaction[i])) & dtf$early_reaction[i]=="yes" & dtf$late_reaction[i]=="no"){
-    dtf$only_early[i] <- "yes"
-  }
-  if( (!is.na(dtf$early_reaction[i]) & !is.na(dtf$late_reaction[i])) & (dtf$early_reaction[i]!="yes" | dtf$late_reaction[i]!="no")){
-    dtf$only_early[i] <- "no"
-  }
-}
-
-dtf$only_early<-factor(dtf$only_early)
-summary(dtf$only_early)
-tabonear<-table(dtf$only_early,dtf$eosino_pre_sic.3)
-tabonear
-cprop(tabonear)
-barplotNM(a=cprop(tabonear)[1:2,1:3],b="nombre de reaction precoce uniquement selon le phenotype",c="2",d=90,e=c(2,5,8),f=c("non","oui"))
-chisq.test(tabonear)
-
-```
-
-
-###reponse tardive uniquement
-
-```{r}
-#creation de la variablepar boucle for
-
-
-dtf$only_late<-factor(dtf$only_late)
-summary(dtf$only_late)
-tabonlate<-table(dtf$only_late,dtf$eosino_pre_sic.3)
-tabonlate
-cprop(tabonlate)
-barplotNM(a=cprop(tabonlate)[1:2,1:3],b="nombre de reaction tardive uniquement selon le phenotype",c=2,d=115,e=c(2,5,8),f=c("non","oui"))
-chisq.test(tabonlate)
-```
-
-
-
-
-###reponse precoce et tardive
-
-```{r}
-#creation de la variable par boucle for
-
-
-dtf$early_late<-factor(dtf$early_late)
-summary(dtf$early_late)
-
-taboth<-table(dtf$early_late,dtf$eosino_pre_sic.3)
-taboth
-cprop(taboth)
-barplotNM(a=cprop(taboth)[1:2,1:3],b="proportion de reaction mixte selon le phenotype",c=2,d=90,e=c(2,5,8),f=c("non","oui"))
-chisq.test(taboth)
-```
-
-
-
 ###expecto pre SIC neutrophile
 
 ```{r}
@@ -903,55 +821,7 @@ barplotNM(a=cprop(tabcheo)[1:2,1:3],b="changement d'Eo dans les expecto sup ou e
 ```
 
 
-###profil d'inflammation pre SIC eosinophilique pur (cut off neutro à 61)
 
-```{r}
-
-tabpreo<-table(dtf$pre.eosino.76,dtf$eosino_pre_sic.3)
-tabpreo
-cprop(tabpreo)
-barplotNM(a =cprop(tabpreo)[1:2,1:3],b="profil sputum pre sic eosino strict par phenotype",c=2,d=110,e=c(2,5,8),f=c("non","oui","ensemble") )
-chisq.test(tabpreo)
-
-```
-
-###profil neutro pre sic (cut off 76)
-
-```{r}
-
-
-#descriptif
-tabpreneu<-table(dtf$pre_neutro.76,dtf$eosino_pre_sic.3)
-tabpreneu
-cprop(tabpreneu)
-by(dtf$pre_neutro.76,dtf$eosino_pre_sic.3,summary)
-barplotNM(a=cprop(tabpreneu)[1:2,1:3],b="profil sputum neutro strict selon le phenotype",c=2,d=130,e=c(2,5,8),f=c("non","yes"))
-chisq.test(tabpreneu)
-```
-
-###profil mixed granulocytic
-
-```{r}
-
-tabpremix<-table(dtf$pre_mixed.76,dtf$eosino_pre_sic.3)
-by(dtf$pre_mixed.76,dtf$eosino_pre_sic.3,table)
-dtf$pre_mixed.76<-factor(dtf$pre_mixed.76)
-cprop(tabpremix)
-barplotNM(a=cprop(tabpremix)[1:2,1:3],b="profil sputum mixed granulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
-chisq.test(tabpremix)
-```
-
-###profil pre paucigranulocytic
-
-```{r}
-
-tabprepauci<-table(dtf$pre_pauci.76,dtf$eosino_pre_sic.3)
-by(dtf$pre_pauci.76,dtf$eosino_pre_sic.3,summary)
-cprop(tabprepauci)
-barplotNM(a=cprop(tabprepauci)[1:2,1:3],b="profil sputum paucigranulocytique selon le phenotype",c=2,d=120,e=c(2,5,8),f=c("no","yes"))
-chisq.test(tabprepauci)
-
-```
 ### pattern de réaction
 
 ```{r}
