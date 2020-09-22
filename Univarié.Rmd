@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r,message=FALSE,warning=FALSE}
 library(readr)
 library(prettyR)
 library(dplyr)
@@ -19,9 +19,12 @@ library(tidyverse)
 library(lubridate)
 library(pander)
 library('tableone')
+library(kableExtra)
 library('dplyr')
-library('kableExtra')
-Univ<-read.csv("dataClean2.csv",sep=";")
+library('hrbrthemes')
+library('DataExplorer')
+Univ<-read.csv("DATAshort.3.csv",sep=";")
+Univ[sapply(Univ, is.character)] <- lapply(Univ[sapply(Univ, is.character)],as.factor)
 ```
 
 ```{r}
@@ -206,12 +209,12 @@ descriptif.quanti.biv.nnorm.test<-function(base,var.quanti,var.crois,noms.var,no
 ##Variables quantitatives
 ```{r,results="asis"}
 tab<-descriptif.quanti.uni(Univ,var.quant)
-pandoc.table(tab)
+pandoc.table(tab,split.table=200)
 ```
 ```{r,warning=FALSE}
 graph<-NULL
 for(var in var.quant){
-  graph[[var]]<-histogramme(df,var,xlab=var)
+  graph[[var]]<-histogramme(Univ,var,xlab=var)
 }
 plot_grid(graph[[1]],graph[[2]],graph[[3]],graph[[4]])
 plot_grid(graph[[5]],graph[[6]],graph[[7]],graph[[8]])
@@ -226,6 +229,73 @@ plot_grid(graph[[33]],"","","")
 
 
 
+
+
+## Variables qualitatives
+
+```{r,results="asis"}
+tab<-descriptif.quali.uni(Univ,var.qual,var.qual)
+#pandoc.table(tab)
+```
+
+```{r,warning=FALSE}
+graph<-NULL
+for(var in var.qual){
+  graph[[var]]<-barplottt(Univ,var,xlab=var)
+}
+plot_grid(graph[[1]],graph[[2]],graph[[3]],graph[[4]])
+plot_grid(graph[[5]],graph[[6]],graph[[7]],graph[[8]])
+plot_grid(graph[[9]],graph[[10]],graph[[11]],graph[[12]])
+plot_grid(graph[[13]],graph[[14]],graph[[15]],graph[[16]])
+plot_grid(graph[[17]],graph[[18]],graph[[19]],graph[[20]])
+plot_grid(graph[[21]],graph[[22]],graph[[23]],graph[[24]])
+plot_grid(graph[[25]],graph[[26]],graph[[27]],graph[[28]])
+plot_grid(graph[[29]],graph[[30]],graph[[31]],graph[[32]])
+plot_grid(graph[[33]],graph[[34]],graph[[35]],graph[[36]])
+plot_grid(graph[[37]],graph[[38]],"","")
+```
+
+##diagramme en baton des pays 
+
+```{r}
+pays<-ggplot(Univ) +
+  aes(x = country, fill= eosino_pre_sic.3) +
+  geom_bar(color="black") +
+  xlab("pays") +
+  ylab("Effectifs") +
+  labs(fill = "T2 haut")
+pays<-pays + scale_fill_manual(values=c("#75b8d1","#d18975"))
+  pays
+ggsave("pays.png",plot = pays)
+
+
+```
+
+```{r}
+#modif métier
+age<-CreateTableOne(vars = c("agent_category","eosino_pre_sic.3"),strata="eosino_pre_sic.3",test = FALSE,data=Univ)
+p<-print(age, smd = FALSE, printToggle = FALSE, noSpaces = TRUE)
+kable(p[,1:2], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+
+
+```{r}
+plot_bar(Univ)
+```
+
+
+```{r}
+plot_density(Univ)
+```
+
+```{r}
+plot_boxplot(Univ,by="eosino_post_sic.3")
+```
 
 
 

@@ -37,6 +37,8 @@ library("lmtest")
 library('dplyr')
 library("tidyr")
 library("naniar")
+library(finalfit)
+library(DataExplorer)
 
 dtfp <- read_delim("DATAclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
 dtfpref<-dtfp
@@ -53,17 +55,17 @@ dtfp$nsbh.res<-factor(dtfp$nsbh.res,c("negative","mild","moderate to severe"))
 dtfp$saba_w_frequency<-factor(dtfp$saba_w_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
 dtfp$saba_sic_frequency<-factor(dtfp$saba_sic_frequency,c("3 times a day or more","1 or 2 times a day","2 or more times a week","once or less per week","never"))
 dtfp$ics_w_gina<-factor(dtfp$ics_w_gina,c("high","medium","low","no ics"))
-dtfp$severity_asthma_gina_w<-factor(dtfp$severity_asthma_gina_w,c("no treatment","mild",         "moderate",      "severe" ))
+dtfp$severity_asthma_gina_w<-factor(dtfp$severity_asthma_gina_w,c("no treatment","mild",         "moderate","severe" ))
 
 ```
 ```{r}
-varshort<-names(dtfp)[!names(dtfp)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","t235","t235p","t250","t250p","t2tp","eosino_post_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","baseline_nsbh_value","eosino_post_sic.3","agent_category" )]
+varshort<-names(dtfp)[!names(dtfp)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","t235","t235p","t250","t250p","t2tp","eosino_post_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","baseline_nsbh_value","eosino_post_sic.3","agent_category","exacerbation_w" )]
 ```
 
 
 ```{r}
-tabeo<-CreateTableOne(vars = varshort,strata = "eosino_post_sic.3",data = dtfp,addOverall = TRUE)
-p<-print(tabeo,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+tabeop<-CreateTableOne(vars = varshort,strata = "eosino_post_sic.3",(data = dtfp%>%drop_na(eosino_post_sic.3)),addOverall = TRUE)
+p<-print(tabeop,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
 kable(p[,1:4], booktabs = T,format = "html") %>% 
   row_spec(0,bold=TRUE) %>% 
  
@@ -1315,4 +1317,59 @@ plot(logspfn)
 lgn<-glm(eosino_post_sic.3~1,data=datlgp,family=binomial)
 anova(logspf,lgn,test = "Chisq")
 ```
+
+## Tableau univarié
+
+
+```{r}
+
+dtfp$baseline_fev10<- dtfp$baseline_fev1/10
+dep<-"eosino_post_sic.3"
+vars<-c("age","bmi","severity_ats","nsbh.res","atopy","smoker","time_last_exp_d","hmw.lmw","dysphonia_w","cough_w","rhinitis_w","conjonct_w","dyspnea_w","saba_w","ics_w","exa_2","baseline_fev10","time_last_exp_d","asthma_control_w","severity_asthma_gina_w","prick_test","specific_ige","ige_mediated_oa","nsbh_sic_max_ratio","obes")
+res_glm_uni <- dtfp%>%
+        glmuni(dep, vars) %>% 
+        fit2df(estimate_suffix=" (univarié)")
+    res_glm_uni
+
+kable(res_glm_uni,row.names=FALSE, align=c("l", "l", "r", "r", "r", "r"))
+```
+
+## Nouveau modèle de régression logistique, modèle complet
+
+```{r}
+gll<-glm(eosino_post_sic.3~age+obes+smoker+time_last_exp_d+atopy+dysphonia_w+rhinitis_w+conjonct_w+ige_mediated_oa+severity_asthma_gina_w+nsbh.res+asthma_control_w,(data=dtfp%>%select(age,obes,smoker,time_last_exp_d,atopy,dysphonia_w,rhinitis_w,conjonct_w,ige_mediated_oa,severity_asthma_gina_w,nsbh.res,eosino_post_sic.3,asthma_control_w)%>%drop_na()),family = binomial)
+vif(gll)
+tbl_regression(gll,exponentiate = TRUE)
+ggcoef(gll,exponentiate = TRUE)
+
+
+```
+
+
+
+```{r}
+stepAIC(gll)
+```
+
+
+```{r}
+
+glln<-glm(eosino_post_sic.3~smoker+dysphonia_w+rhinitis_w+conjonct_w+severity_asthma_gina_w+nsbh.res+asthma_control_w,(data=dtfp%>%select(age,obes,smoker,time_last_exp_d,atopy,dysphonia_w,rhinitis_w,conjonct_w,ige_mediated_oa,severity_asthma_gina_w,nsbh.res,eosino_post_sic.3,asthma_control_w)%>%drop_na()),family = binomial)
+vif(glln)
+tbl_regression(glln,exponentiate = TRUE)
+ggcoef(glln,exponentiate = TRUE)
+
+```
+
+## Avec cas complet que sur le modèle final
+
+```{r}
+gllnm<-glm(eosino_post_sic.3~smoker+dysphonia_w+rhinitis_w+conjonct_w+severity_asthma_gina_w+nsbh.res+asthma_control_w,(data=dtfp%>%select(smoker,atopy,dysphonia_w,rhinitis_w,conjonct_w,severity_asthma_gina_w,nsbh.res,eosino_post_sic.3,asthma_control_w)%>%drop_na()),family = binomial)
+vif(gllnm)
+tbl_regression(gllnm,exponentiate = TRUE)
+ggcoef(gllnm,exponentiate = TRUE)
+
+```
+
+
 

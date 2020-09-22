@@ -3,8 +3,8 @@ title: "descriptive-sputum pre SIC"
 author: "Nicolas Migueres"
 date: "24/06/2020"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 # analyse avec pour critère discriminant le seuil de 3% d'eosinophilie dans les crachats induits avant le SIC.
 
@@ -37,22 +37,29 @@ dtf$hmw.lmw<-factor(dtf$hmw.lmw,c("LMW","HMW"))
 
 dtf$asthma_control_sic<-factor(dtf$asthma_control_sic,c("asthma uncontrolled","asthma controlled"))
 dtf$asthma_control_w<-factor(dtf$asthma_control_w,c("asthma uncontrolled","asthma controlled"))
+dtf$saba_w_frequency<-factor(dtf$saba_w_frequency,c("never","once or less per week", "2 or more times a week", '1 or 2 times a day',"3 times a day or more"))
 ```
 
 
 ```{r}
-varshort<-names(dtf)[!names(dtf)%in%c("t235","poor sx control","airway ob","method_sic","country","city","id code_local","year","height", "weight","agent_category","race","job_class","agent_name","job","exposure","nsbh_method","nsbh_agent","nsbh_unit","baseline_nsbh_value","neutro_pre_sic_cell","neutro_post_sic_cell","t2or50","eosino_pre_sic_cell","eosino_post_sic_cell","post_24_nsbh_value","eosino_pre_sic.3" )]
+varshort<-names(dtf)[names(dtf)%in%c('age','sex','diagnosis','bmi','obes',"smoker","education","atopy","asthma_pre","age_onset_cat","hmw.lmw","asthma_delay","asthma_work_time","persist","time_last_exp_m","time_last_exp_d","sputum","rhinitis_w",'rhinitis_onset',"conjonct_w","wheezing_w","cough_w","tightness_w","dyspnea_w","sinusitis","dysphonia_w","severity_asthma_step_w","saba_w_frequency","exa_2","severity_ats","baseline_fev1","airway_obstruction","nsbh.res",'nsh_sic_max_ratio','ics_w',"saba_w","anti_h1_w","asper","iget","ger","prick_test","specific_ige","type_reaction","sputum_pre_sic", "sputum_post_sic")]
+varnorm<-names(dtf)[names(dtf)%in%c("age","bmi","baseline_fev1")]
+varexac<-names(dtf)[names(dtf)%in%c("education","age_onset_cat,severity_asthma_step_w")]
+varnonorm<-names(dtf)[names(dtf)%in%c("asthma_delay","asthma_work_time","time_last_exp_m")]
 ```
 
 
 ```{r}
 tabeo<-CreateTableOne(vars = varshort,strata = "eosino_pre_sic.3",data = dtf,addOverall = TRUE)
-p<-print(tabeo,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
-kable(p[,1:4], booktabs = T,format = "pipe") %>% 
+p<-print(tabeo,testNormal=varnorm,nonnormal=varnonorm,exact =varexac, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:4], booktabs = T,format = "html") %>% 
   row_spec(0,bold=TRUE) %>% 
  
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
- add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+ add_footnote("Median[Q1, Q3], n(%), p: studentor wilcoxon or kruskal tests, Chi 2 test or fisher exact test", notation="alphabet")
+ 
+ write.csv(p, file = "descriptive.csv")
+ 
 ```
 
 ## Cartographie des données manquantes et expression en pourcentage du total des données
@@ -154,7 +161,7 @@ fisher.test(tabe)
 ### Atopie
 
 ```{r}
-taba<-table(dtf$atopy,dtf$eosino_pre_sic.3)
+taba<-table(dtf$atopy,dtf$eosino_pre_sic.3,deparse.level = 2)
 taba
 cprop(taba)
 e<-(cprop(taba)[1:2,1:3])

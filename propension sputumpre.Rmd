@@ -1,0 +1,314 @@
+---
+title: "Propension sputum pré SIC"
+author: "Nicolas Migueres"
+date: "06/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,message=FALSE,warning=FALSE}
+library(readr)
+library(broom)
+library(gtsummary)
+library(survey)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library("magick")
+library("webshot")
+library("MatchIt")
+library('MASS')
+library(gtsummary)
+library("GGally")
+library('car')
+select <- dplyr::select
+
+
+```
+
+```{r,message=FALSE,warning=FALSE}
+df<- read_delim("DATAclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+### Objectif: analyse de la variable T2/no/T2 et de son effet sur des variables d'intérets selon une analyse réalisé par score de propension.
+Pricipe: rendre comparable les populations de par leur distribution en T2 selon des covariables pour pouvoir mesurer un outcome.
+
+
+Variables d'intéret: 
+- severity_ats
+- hmw.lmw
+- atopy
+
+Variable à rentrer dans le score de propension avec sélection sélection des variables selon le fait qu'elles n'ai pas un impact direct sur les variables d'intéret :
+age, sex, bmi, smoker, time_last_exp_m, time_last_exp_d, status_sic,cough_w,wheezing_w,tighness_w,dysphonia_w,asthma_pre,sinusitis,asthma_pre,asthma_work_time,education
+
+(rhinitis et conjonct connu pour être relié à Hmw et atopy, sputum connu pour être relié à sputum, asthma delay associé HMW, FEV1,saba_sic,ics_sic relié relié severity_ATS )
+
+
+Variable à mettre dans le score de propension: variable provoquant un biais de confusion en priorité:
+age, obésité, tabac, “unchanged/persistent”, education, asthma_work_time,Time_last_exp_m,age_onset_cat,sputum,rhinitis, sinusitis
+
+## Analyse sans score de propension selon SMD
+```{r}
+df$arm <- NA
+df$arm[df$eosino_pre_sic.3== "yes"] <- "T2"
+df$arm[df$eosino_pre_sic.3 == "no"] <- "no T2"
+
+df$arm<-as.factor(df$arm)
+
+df$time_last_exp_dich<- ifelse(df$time_last_exp_m>1,1,0)
+df$nsbh.res<-factor(df$nsbh.res,c("negative","mild","moderate to severe"))
+df$hmw.lmw<-factor(df$hmw.lmw,c("LMW","HMW"))
+
+
+var<-c("age", "sex", "bmi", "smoker", "sputum", "age_onset_cat", "time_last_exp_m","persist","sinusitis","rhinitis_w","dysphonia_w","asthma_pre","asthma_work_time","education","severity_ats","atopy","hmw.lmw")
+
+tabunmatch<-CreateTableOne(vars = var,strata = "arm",data = df,test = FALSE)
+p<-print(tabunmatch,smd=TRUE)
+kable(p, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+##Méthode par appariement par le score de propension
+
+
+
+
+```{r}
+#création du score de propension
+
+datprs<-df%>%select(var,arm)%>% drop_na()
+
+datprs<-mutate(datprs,
+           severity_ats=case_when(
+             severity_ats=="yes"~"1",
+             severity_ats=="no"~"0"
+           ),
+           hmw.lmw=case_when(
+             hmw.lmw=="HMW"~"1",
+             hmw.lmw=="LMW"~"0"
+           ),
+           atopy=case_when(
+             atopy=="yes"~"1",
+             atopy=="no"~"0"
+           )
+           )
+
+datprs[sapply(datprs, is.character)] <- lapply(datprs[sapply(datprs, is.character)],as.factor)
+
+ps<-glm(arm=="T2"~ age+ sex+ bmi+ smoker+ sputum+age_onset_cat+ time_last_exp_m+ atopy+hmw.lmw+persist+sinusitis+rhinitis_w+dysphonia_w+asthma_pre+sinusitis+asthma_work_time+education,data=datprs,family = binomial)
+
+datprs$psvalue <- predict(ps, type = "response")
+
+#appariement des données selon le score de propension, calcul du caliper selon la formule (caliper=0,2*sd logit(ps))## caliper size (0.1 * logit(sd(prop.score)))
+
+sdPS<-sd(predict(ps),na.rm=T)
+0.2*log(sdPS/(1-sdPS)) 
+
+
+0.2*sd(logit(datprs$psvalue))
+
+m.nn <- matchit((arm=="T2" ) ~ psvalue , data=datprs,
+                method= "nearest", ratio = 1, caliper =0.66)
+
+#summary(m.nn)
+match.data = match.data(m.nn)
+
+matches <- data.frame(m.nn$match.matrix)
+
+# this command saves the data matched
+group1 <- match(row.names(matches), row.names(match.data))
+group2 <- match(matches$X1, row.names(match.data))
+
+match.data$matachID <- NA
+for (i in 1:length(match.data$matachID)){
+  if(!is.na(group1[i])){
+    match.data$matachID[group1[i]] <- i
+    match.data$matachID[group2[i]] <- i
+  }
+}
+match.data$matachID <- factor(match.data$matachID)
+
+## Construct a table
+tabMatched <- CreateTableOne(vars = var, strata = "arm", data = match.data, test = FALSE)
+#print(tabUnmatched, smd = TRUE)
+
+pmsp <- print(tabMatched,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(pmsp, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+## analyse de la sévérité par appariement
+
+```{r}
+
+datprs$severity_ats<-as.factor(datprs$severity_ats)
+logitlast<-glm(severity_ats~arm+persist+sinusitis,data = match.data,family = binomial)
+summary(logitlast)
+
+library(gtsummary)
+tbl_regression(logitlast, exponentiate = TRUE)
+
+loginul<-glm(severity_ats~1,data = match.data,family = binomial)
+anova(loginul,logitlast,test="Chisq")
+
+```
+
+
+
+
+```{r}
+#calcul selon méthode IPW
+
+#calcul des poids
+datprs <- datprs %>%
+   mutate(propensity_glm = predict(ps, type = "response"),
+          weight_glm = 1 / propensity_glm * (arm=="T2" ) + 
+                       1 / (1 - propensity_glm) * (1 - (arm=="T2" )))
+#weighted data
+dataSvy <- svydesign(ids = ~ 1, data= datprs, weights = ~ datprs$weight_glm)
+
+#construct table
+tabWeighted <- svyCreateTableOne(vars = var, strata = "arm", data = dataSvy,test = FALSE)
+
+pws <- print(tabWeighted,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(pws, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+
+```
+
+
+
+
+##analyse sévérité par la méthode de l'inverse de la probabilité
+
+```{r}
+logitipf<-svyglm(severity_ats~arm+asthma_pre,design=dataSvy,family=binomial)
+summary(logitipf)
+tbl_regression(logitipf,exponentiate = TRUE)
+```
+### ANalyse sans appariement 
+```{r}
+gln<-glm(severity_ats~arm,data=datprs,family = binomial)
+summary(gln)
+tbl_regression(gln,exponentiate = TRUE)
+glnn<-glm(severity_ats~1,data=datprs,family = binomial)
+anova(gln,glnn,test="Chisq")
+```
+
+
+
+Tableau recapitulatif
+
+```{r}
+
+
+tbl_merge(tbls = list( tbl_regression(gln,exponentiate = TRUE),tbl_regression(logitipf,exponentiate = TRUE),tbl_regression(logitlast,exponentiate = TRUE)), 
+  tab_spanner = c("Modèle sans ajustement", "Modèle avec pondération sur le score de propension","Mèle avec appariement sur le score de propension"))
+
+```
+
+
+
+## Atopy par match
+
+```{r}
+datprs$atopy<-as.factor(datprs$atopy)
+logitat<-glm(atopy~arm,data = match.data,family = binomial)
+summary(logitat)
+
+library(gtsummary)
+tbl_regression(logitat, exponentiate = TRUE)
+
+loginula<-glm(atopy~1,data = match.data,family = binomial)
+anova(loginula,logitat,test="Chisq")
+```
+
+
+## atopy par IPW
+
+```{r}
+logitia<-svyglm(atopy~arm,design=dataSvy,family=binomial)
+summary(logitia)
+tbl_regression(logitia,exponentiate = TRUE)
+```
+
+## analyse de sensibilité avec appariment
+
+```{r}
+m.nni <- matchit((arm=="T2" ) ~ time_last_exp_m , data=datprs,
+                method= "nearest", ratio = 1, )
+
+#summary(m.nn)
+match.data2 = match.data(m.nni)
+
+matches2 <- data.frame(m.nni$match.matrix)
+
+# this command saves the data matched
+group1 <- match(row.names(matches2), row.names(match.data2))
+group2 <- match(matches2$X1, row.names(match.data2))
+
+match.data2$matachID <- NA
+for (i in 1:length(match.data2$matachID)){
+  if(!is.na(group1[i])){
+    match.data2$matachID[group1[i]] <- i
+    match.data2$matachID[group2[i]] <- i
+  }
+}
+match.data2$matachID <- factor(match.data2$matachID)
+
+## Construct a table
+tabMatched <- CreateTableOne(vars = var, strata = "arm", data = match.data2, test = FALSE)
+#print(tabUnmatched, smd = TRUE)
+
+pmsp2 <- print(tabMatched,  smd = TRUE, printToggle = FALSE, noSpaces = FALSE)
+
+kable(pmsp2, booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+
+
+```{r}
+logr<-glm(severity_ats~arm,data=match.data2,family=binomial)
+summary(logr)
+tbl_regression(logr,exponentiate = TRUE)
+```
+
+## Tableau récapitulatif des SMD
+
+```{r}
+dataSMD = data.frame(unmatched = c(.164,.076,.121,.047,.078,.199,.04,.243,.107,.103,.235,.184,.026,.105,.186,.073,.016),
+   matched = c(.017,.001,.044,.039,.041,.131,.046,.120,.217,.107,.094,.059,.025,.187,.233,.034,.036),
+   weighted = c(.06,.02,.02,.028,.045,.298,.010,.004,.056,.005,.01,.242,.009,.086,.239,.072,.025))
+rownames(dataSMD) <- c("Âge", "Sexe", "IMC", "Statut tabagique","Crachat au travail","Âge d'apparition de l'asthme","Délai de la dernière exposition","Persistance de l'exposition","Sinusite au travail","Rhinite au travail","Dysphonie au travail","Antécédent d'asthme", "Durée d'exposition symptomatique","Éducation","Sévérité","Atopie","Type d'agent")
+
+utilitR::stdDiffDotPlot(dataSMD=dataSMD,col=c("black", "blue", "purple") )
+
+
+
+```
+

@@ -3,9 +3,9 @@ title: "Analyses Preliminaires version 1.1"
 author: "Nicolas Migueres"
 date: "29 janvier 2020"
 output:
-  word_document: default
-  toc: yes
   html_document: default
+  toc: yes
+  word_document: default
   pdf_document: default
 ---
 
@@ -34,7 +34,9 @@ library("lmtest")
 library("tidyr")
 library("naniar")
 library(dplyr)
-
+library('corrplot')
+library('Hmisc')
+library(gtsummary)
 #nettoyage de la base de donnee
 
 colnames(DATA)[colnames(DATA)=="CODE_CENTER_COUNTRY"] <- "COUNTRY"
@@ -390,6 +392,26 @@ DATA<-mutate(DATA,change_eosino.2=case_when(
 #chamgement odre levels pour lecture table one
 
 DATA$hmw.lmw<-factor(DATA$hmw.lmw,c("LMW","HMW"))
+
+#création d'une variable informant sur le statut d'expostion équivalente au moment du SIC (vs. écarté) dichotomique
+#persist -> "yes"/"no"
+
+
+DATA<-DATA%>%mutate(
+  persist=case_when(
+    status_sic== "working and exposed"~ "yes",
+    status_sic== "working with reduced exposure"~ "yes",
+    status_sic== "retired"~"no",
+    status_sic== "unemployed"~ "no",
+    status_sic== "sick leave"~"no",
+    status_sic== "working unexposed" ~"no",
+    status_sic== "retraining program"~ "no"
+   
+  )
+)
+
+DATA$obes<-ifelse(DATA$bmi>=30,"yes","no")
+
 ##Création des nouveaux data.frame
 
  
@@ -452,4 +474,58 @@ plot(DATA$eosino_pre_sic,DATA$time_last_exp_m)
 cor.test(DATA$time_last_exp_m,DATA$eosino_pre_sic,method = "kendall")
 
 ```
+
+## Etude des corrélations entre les différents biomarqueurs
+
+```{r}
+biom<-DATA%>%select(eosino_pre_sic,feno_pre_sic,blood_eosino)
+M<-cor(biom, use = "complete.obs",method = "kendall")
+N<-cor(biom, use = "complete.obs",method = "spearman")
+M
+N
+corrplot(M)
+library('Hmisc')
+rcorr(as.matrix(biom),type ="spearman")
+
+```
+## Corrélation marqueurs post sic
+
+```{r}
+biomp<-DATA%>%select(eosino_post_sic,feno_post_24_sic,blood_eosino)
+M<-cor(biomp, use = "complete.obs",method = "kendall")
+N<-cor(biomp, use = "complete.obs",method = "spearman")
+M
+N
+corrplot(M)
+library('Hmisc')
+rcorr(as.matrix(biomp),type ="spearman")
+
+```
+
+
+### modèle sévérité
+```{r}
+ f<-glm(severity_ats~eosino_post_sic+hmw.lmw+atopy,data=DATA,family = binomial)
+tbl_regression(f,exponentiate = TRUE)
+bnul<-glm(severity_ats~1,data=(DATA%>%select(severity_ats,eosino_post_sic,hmw.lmw,atopy)%>%drop_na),family=binomial)
+anova(f,bnul,test="Chisq")
+
+g<-glm(exa_2~eosino_post_sic+hmw.lmw+atopy,data=DATA,family = binomial)
+tbl_regression(g,exponentiate = TRUE)
+```
+```{r}
+g<-glm(exa_2~eosino_post_sic+hmw.lmw+atopy,data=DATA,family = binomial)
+tbl_regression(g,exponentiate = TRUE)
+```
+
+```{r}
+h<-glm(`gina 4-5`~eosino_post_sic+hmw.lmw+atopy,data=DATA,family = binomial)
+tbl_regression(h,exponentiate = TRUE)
+```
+
+```{r}
+i<-glm(airway_obstruction~eosino_post_sic+hmw.lmw+atopy,data=DATA,family = binomial)
+tbl_regression(i,exponentiate = TRUE)
+```
+
 
