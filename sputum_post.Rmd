@@ -1361,14 +1361,13 @@ ggcoef(glln,exponentiate = TRUE)
 
 ```
 
-## Avec cas complet que sur le modèle final
+## Avec cas complet que sur le modèle
 
 ```{r}
-gllnm<-glm(eosino_post_sic.3~smoker+dysphonia_w+rhinitis_w+conjonct_w+severity_asthma_gina_w+nsbh.res+asthma_control_w,(data=dtfp%>%select(smoker,atopy,dysphonia_w,rhinitis_w,conjonct_w,severity_asthma_gina_w,nsbh.res,eosino_post_sic.3,asthma_control_w)%>%drop_na()),family = binomial)
-vif(gllnm)
-tbl_regression(gllnm,exponentiate = TRUE)
-ggcoef(gllnm,exponentiate = TRUE)
-
+glln<-glm(eosino_post_sic.3~smoker+dysphonia_w+rhinitis_w+conjonct_w+severity_asthma_gina_w+nsbh.res+asthma_control_w,(data=dtfp%>%select(smoker,time_last_exp_d,atopy,dysphonia_w,rhinitis_w,conjonct_w,severity_asthma_gina_w,nsbh.res,eosino_post_sic.3,asthma_control_w)%>%drop_na()),family = binomial)
+vif(glln)
+tbl_regression(glln,exponentiate = TRUE)
+ggcoef(glln,exponentiate = TRUE)
 ```
 
 

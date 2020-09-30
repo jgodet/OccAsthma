@@ -93,12 +93,13 @@ acmag<-MCA(datag,graph=FALSE)
 
 summary(acmag)
 
-require(explor)
-explor(acmag)
+#require(explor)
+#explor(acmag)
 
 ```
 
 ```{r}
+
 tabMat <- tab.disjonctif(datagen$agent_category)
 colnames(tabMat) <- levels(as.factor(datagen$agent_category))
 #check
@@ -106,6 +107,25 @@ apply(tabMat,MARGIN = 2, FUN=sum)
 
 qui <- which(apply(tabMat,MARGIN = 2, FUN=sum) <10)
 tabMat <- tabMat[,-qui]
+
+
+
+```
+
+```{r}
+datacr<-cbind(datagen,tabMat)
+
+dre<-datacr%>% 
+  select(colnames (tabMat),eosino_post_sic.3,nsbh.res,saba_sic,ics_sic,nsbh.res,severity_ats,type_reaction)%>%
+  drop_na()
+  
+
+acmag<-MCA(dre,graph=FALSE)
+
+summary(acmag)
+
+require(explor)
+explor(acmag)
 
 ```
 

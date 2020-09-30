@@ -1,0 +1,213 @@
+---
+title: "Random Forest"
+author: "Nicolas Migueres"
+date: "25/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,message=FALSE,warning=FALSE}
+library(readr)
+library(FactoMineR)
+library(broom)
+library(gtsummary)
+library(survey)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library("magick")
+library("webshot")
+library("MatchIt")
+library('MASS')
+library(gtsummary)
+library("GGally")
+library('car')
+library(mice)
+library(randomForest)
+library(DataExplorer)
+```
+
+# Réalisation d'une analyse de random forest pour classification non supervisée
+
+Variables retenues pour la réalisation :
+age, sex, IMC, tabac, éducation, atopie, antécédent d'asthme, GINA, SABA, durée de l'exposition avant l'apparition d'asthme, délai dernière exposition, durée exposition symptomatique,exposition au moment du SIC, toux, sifflement, dyspnée, sputum , dysphonie, rhinite conjonctivite, sinusite, urticaire, VEMS, FVC,Tiffeneau, NSBH
+
+```{r}
+darf<- read_delim("DATAclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+
+#traNsformation yes/no en 0/1
+darf2<-darf%>%select(dysphonia_w,cough_w,sputum,sinusitis,urticaria_w,rhinitis_w,conjonct_w,wheezing_w,dyspnea_w,atopy,asthma_pre)
+
+helperFunction <- function(x){
+    ifelse(x=="yes", 1,0)
+}
+
+darf2<-darf2 %>%
+    mutate_all(helperFunction)
+
+
+# transformation agent catégorie en variables indépendante, 
+
+tabMat <- tab.disjonctif(darf$agent_category)
+colnames(tabMat) <- levels(as.factor(darf$agent_category))
+#check
+apply(tabMat,MARGIN = 2, FUN=sum)
+
+qui <- which(apply(tabMat,MARGIN = 2, FUN=sum) <10)
+tabMat <- tabMat[,-qui]
+
+
+#transformation charactère en 0/1 et séparant les variables à plus de 2 classes en variables indépendantes
+darf<-mutate(darf,
+           sex=case_when(
+             sex=="male"~1,
+             sex=="female"~0
+           ),
+           smok.cur=case_when(
+             smoker=="current"~1,
+             smoker!="current"~0
+           ),
+           smok.ex=case_when(
+             smoker=="ex"~1,
+             smoker!="ex"~0
+           ),
+           smok.nev=case_when(
+             smoker=="never"~1,
+             smoker!="never"~0
+          ),
+          gina0=case_when(
+            severity_asthma_step_w=="step 0"~1,
+            severity_asthma_step_w!="step 0"~0
+          ),
+          gina1=case_when(
+            severity_asthma_step_w=="step 1"~1,
+            severity_asthma_step_w!="step 1"~0
+          ),
+          gina2=case_when(
+            severity_asthma_step_w=="step 2"~1,
+            severity_asthma_step_w!="step 2"~0
+          ),
+          gina3=case_when(
+            severity_asthma_step_w=="step 3"~1,
+            severity_asthma_step_w!="step 3"~0
+          ),
+          gina4=case_when(
+            severity_asthma_step_w=="step 4"~1,
+            severity_asthma_step_w!="step 4"~0
+          ),
+          gina5=case_when(
+            severity_asthma_step_w=="step 5"~1,
+            severity_asthma_step_w!="step 5"~0
+          ),
+          saba0=case_when(
+            saba_w_frequency=="never"~1,
+            saba_w_frequency!="never"~0
+          ),
+          saba1=case_when(
+            saba_w_frequency=="once or less per week"~1,
+            saba_w_frequency!="once or less per week"~0
+          ),
+          saba2=case_when(
+            saba_w_frequency=="2 or more times a week"~1,
+            saba_w_frequency!="2 or more times a week"~0
+          ),
+          saba3=case_when(
+            saba_w_frequency=="1 or 2 times a day"~1,
+            saba_w_frequency!="1 or 2 times a day"~0
+          ),
+           saba4=case_when(
+            saba_w_frequency=="3 times a day or more"~1,
+            saba_w_frequency!="3 times a day or more"~0
+          ),
+          educ1=case_when(
+            education=="primary"~1,
+            education!="primary"~0
+          ),
+          educ2=case_when(
+            education=="secondary"~1,
+            education!="secondary"~0
+          ),
+           educ3=case_when(
+            education=="post-secondary"~1,
+            education!="post-secondary"~0
+          ),
+          nsbh1=case_when(
+            nsbh.res=="negative"~1,
+            nsbh.res!="negative"~0
+          ),
+          nsbh2=case_when(
+            nsbh.res=="mild"~1,
+            nsbh.res!="mild"~0
+          ),
+          nsbh3=case_when(
+            nsbh.res=="moderate to severe"~1,
+            nsbh.res!="moderate to severe"~0
+          ),
+           )
+
+darf<-darf%>%select(age,sex,bmi,smok.cur,smok.nev,smok.ex,educ1,educ2,educ3,gina0,gina1,gina2,gina3,gina4,gina5,saba0,saba1,saba2,saba3,saba4,asthma_work_time,time_last_exp_m_norm,asthma_delay,baseline_fev1,baseline_fvc,fev1_fvc,nsbh1,nsbh2,nsbh3)
+
+darf<-cbind(darf,darf2)
+
+
+# transformation des catégorie d'agent en variables indépendantes
+
+darf<-cbind(tabMat,darf)
+
+
+
+
+```
+
+
+```{r}
+#exploration des données
+plot_missing(darf)
+plot_density(darf)
+plot_histogram(darf)
+plot_bar(darf)
+```
+
+```{r}
+#transformation log car asymétrie positive
+
+darf<-mutate(darf,
+             asthma_delay=log10(asthma_delay),
+             asthma_work_time= log10(asthma_work_time))
+plot_density(darf)
+```
+
+
+```{r}
+#implémentation
+colnames(darf)<-gsub(" ",x=colnames(darf),".")
+colnames(darf)<-gsub("/",x=colnames(darf),".")
+colnames(darf)<-gsub("-",x=colnames(darf),".")
+#darfimp<-rfImpute(darf,)   échec par méthode de proximité
+
+imp<-mice(darf,m=5,maxit=50,meth='pmm',seed=500)
+darfi<-complete(imp,1)
+plot_missing(darfi) #persistance de 3% de NA malgré mice
+darfi<-drop_na(darfi)
+
+```
+
+
+```{r}
+darfi <- as.data.frame(sapply(darfi, function(x) as.numeric(x)))
+
+ fit.rf <- randomForest(darfi[,],proximity=T,oob.prox = TRUE,ntree = 1000)
+```
+
