@@ -1,0 +1,396 @@
+---
+title: "Random Forest"
+author: "Nicolas Migueres"
+date: "25/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,message=FALSE,warning=FALSE}
+library(readr)
+library(FactoMineR)
+library(broom)
+library(gtsummary)
+library(survey)
+library("kableExtra")
+library("tableone")
+library('stringr')
+library("devtools")
+library("Amelia")
+library("questionr")
+library("ggplot2")
+library("wesanderson")
+library("lmtest")
+library("tidyr")
+library("naniar")
+library("dplyr")
+library("magick")
+library("webshot")
+library("MatchIt")
+library('MASS')
+library(gtsummary)
+library("GGally")
+library('car')
+library(mice)
+library(randomForest)
+library(DataExplorer)
+library(clValid)
+select <- dplyr::select
+
+
+```
+
+# Réalisation d'une analyse de random forest pour classification non supervisée
+
+Variables retenues pour la réalisation :
+age, sex, IMC, tabac, éducation, atopie, antécédent d'asthme, GINA, SABA, durée de l'exposition avant l'apparition d'asthme, délai dernière exposition, durée exposition symptomatique,exposition au moment du SIC, toux, sifflement, dyspnée, sputum , dysphonie, rhinite conjonctivite, sinusite, urticaire, VEMS, FVC,Tiffeneau, NSBH
+
+```{r}
+darf<- read_delim("DATAclean2.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+
+#transformation yes/no en 0/1
+
+darf2<-darf%>%select(dysphonia_w,cough_w,sputum,sinusitis,urticaria_w,rhinitis_w,conjonct_w,wheezing_w,dyspnea_w,atopy,asthma_pre,)
+
+helperFunction <- function(x){
+    ifelse(x=="yes", 1,0)
+}
+
+darf2<-darf2 %>%
+    mutate_all(helperFunction)
+
+
+# transformation agent catégorie en variables indépendante, 
+
+tabMat <- tab.disjonctif(darf$agent_category)
+colnames(tabMat) <- levels(as.factor(darf$agent_category))
+#check
+apply(tabMat,MARGIN = 2, FUN=sum)
+
+############################
+#ajout JG 20201002
+darf$time_last_exp_m_norm <-log10(darf$time_last_exp_m)
+darf$exacerbation_w_n <- utilitR::tonum(darf$exacerbation_w, pattern = "9 or more", replacement = "9")
+#####################
+
+#transformation charactère en 0/1 et séparant les variables à plus de 2 classes en variables indépendantes
+darf1<-mutate(darf,
+           sex=case_when(
+             sex=="male"~1,
+             sex=="female"~0
+           ),
+           smok.cur=case_when(
+             smoker=="current"~1,
+             smoker!="current"~0
+           ),
+           smok.ex=case_when(
+             smoker=="ex"~1,
+             smoker!="ex"~0
+           ),
+           smok.nev=case_when(
+             smoker=="never"~1,
+             smoker!="never"~0
+          ),
+          gina0=case_when(
+            severity_asthma_step_w=="step 0"~1,
+            severity_asthma_step_w!="step 0"~0
+          ),
+          gina1=case_when(
+            severity_asthma_step_w=="step 1"~1,
+            severity_asthma_step_w!="step 1"~0
+          ),
+          gina2=case_when(
+            severity_asthma_step_w=="step 2"~1,
+            severity_asthma_step_w!="step 2"~0
+          ),
+          gina3=case_when(
+            severity_asthma_step_w=="step 3"~1,
+            severity_asthma_step_w!="step 3"~0
+          ),
+          gina4=case_when(
+            severity_asthma_step_w=="step 4"~1,
+            severity_asthma_step_w!="step 4"~0
+          ),
+          gina5=case_when(
+            severity_asthma_step_w=="step 5"~1,
+            severity_asthma_step_w!="step 5"~0
+          ),
+          saba0=case_when(
+            saba_w_frequency=="never"~1,
+            saba_w_frequency!="never"~0
+          ),
+          saba1=case_when(
+            saba_w_frequency=="once or less per week"~1,
+            saba_w_frequency!="once or less per week"~0
+          ),
+          saba2=case_when(
+            saba_w_frequency=="2 or more times a week"~1,
+            saba_w_frequency!="2 or more times a week"~0
+          ),
+          saba3=case_when(
+            saba_w_frequency=="1 or 2 times a day"~1,
+            saba_w_frequency!="1 or 2 times a day"~0
+          ),
+          #  saba4=case_when(
+          #   saba_w_frequency=="3 times a day or more"~1,
+          #   saba_w_frequency!="3 times a day or more"~0
+          # ),
+          saba4=case_when(
+            saba_w_frequency=="≥3 times a day"~1,
+            saba_w_frequency!="≥3 times a day"~0
+          ),
+          educ1=case_when(
+            education=="primary"~1,
+            education!="primary"~0
+          ),
+          educ2=case_when(
+            education=="secondary"~1,
+            education!="secondary"~0
+          ),
+           educ3=case_when(
+            education=="post-secondary"~1,
+            education!="post-secondary"~0
+          ),
+          nsbh1=case_when(
+            nsbh.res=="negative"~1,
+            nsbh.res!="negative"~0
+          ),
+          nsbh2=case_when(
+            nsbh.res=="mild"~1,
+            nsbh.res!="mild"~0
+          ),
+          nsbh3=case_when(
+            nsbh.res=="moderate to severe"~1,
+            nsbh.res!="moderate to severe"~0
+          ),
+           )
+
+darf1<-darf1%>%select(age,sex,bmi,smok.cur,smok.nev,smok.ex,educ1,educ2,educ3,gina0,gina1,gina2,gina3,gina4,gina5,saba0,saba1,saba2,saba3,saba4,asthma_work_time,time_last_exp_m_norm,asthma_delay,baseline_fev1,baseline_fvc,fev1_fvc,nsbh1,nsbh2,nsbh3,exacerbation_w_n)
+
+darf3<-cbind(darf1,darf2)
+
+
+# transformation des catégorie d'agent en variables indépendantes
+
+darf3<-cbind(tabMat,darf3)
+
+
+
+
+```
+
+## Description du jeux de données avant imputation de données manquantes
+
+```{r}
+#exploration des données
+plot_missing(darf3)
+plot_density(darf3)
+plot_histogram(darf3)
+plot_bar(darf3)
+```
+
+```{r}
+#transformation log car asymétrie positive
+
+darf3<-mutate(darf3,
+             asthma_delay=log10(asthma_delay+1),
+             asthma_work_time=log10(asthma_work_time+1),
+             exacerbation_w_n=log(exacerbation_w_n+1))
+plot_density(darf3)
+```
+
+
+```{r}
+#implémentation
+colnames(darf3)<-gsub(" ",x=colnames(darf3),".")
+colnames(darf3)<-gsub("/",x=colnames(darf3),".")
+colnames(darf3)<-gsub("-",x=colnames(darf3),".")
+#darfimp<-rfImpute(darf,age)  
+
+imp<-mice(darf3,m=5,maxit=50,meth='pmm',seed=500)
+darfi<-complete(imp,5)
+plot_missing(darfi) #persistance de 3% de NA malgré mice
+
+darfi <- as.data.frame(sapply(darfi, function(x) as.numeric(x)))
+maxTo1 <- function(x){x/max(x)}
+daa <- apply(darfi,2, maxTo1)
+daa <- scale(daa, center = F, scale = T)
+
+
+#daa <- scale(darfi,center = TRUE,scale=TRUE)
+#daa <- daa[1:dim(daa)[1], 1:dim(daa)[2]]
+
+
+##############
+# 
+```
+
+### Modèle et vérification
+
+Evaluation de la validité interne et de la stabilité du cluster.
+Des indices sont évallué selon la méthode de clustering et le nombre de cluster choisies.
+Connectivity: Les observation sont placées dans le même groupe que leur voisin
+Dunn: ratio distance minimale avec une observation d'un cluster différent avec distance maximale avec une observation du même cluster.
+silhouette:degré de confiance de l'attribution d'une observation dans un cluster ( de 1 = bon à -1 mauvais)
+APN: proportion d'observation qui changent de cluster après réalisation d'une analyse de cluster avec une variable en moins.
+AD: distance moyenne des observations d'un même cluster avant et aprés délétion d'une variable
+FOM: Moyenne de la variance intra-cluster, des individus dans la colonne délétée  
+
+Stabilité: comportement des variable selon la réalisation de la méthode de cluster avec 1 variable en moins. 
+```{r}
+daz<-as.data.frame(daa)
+ intern <- clValid(daz,nClust =  2:6, clMethods=c("hierarchical","kmeans","pam"),maxitems = 1518, validation="internal")
+summary (intern)
+plot(intern)
+
+ stab <- clValid(daz, 2:6, clMethods=c("hierarchical","kmeans","pam"), validation="stability")
+ optimalScores(stab)
+```
+
+## Calcul de l'importance de variables pour la réalisation de la classification non supervisée
+
+```{r}
+
+fit.rf <- randomForest(daa[,-35:-1],proximity=TRUE,oob.prox = TRUE,ntree = 1000)
+
+varImpPlot(fit.rf,main="Importance des variables pour établir une classification",n.var=76)
+```
+
+## Cluster hiérarchique k=2
+
+
+```{r}
+ hclust.rf <- hclust(as.dist(1-fit.rf$proximity),method = "ward.D2")
+plot( hclust.rf )
+rect.hclust(hclust.rf, k=2,border=1:2)
+```
+
+
+```{r}
+
+darf$groups2 <- cutree(hclust.rf, k=2)
+
+varshort<-names(darf)[names(darf)%in%c('age','sex','diagnosis','bmi','obes',"smoker","education","atopy","asthma_pre","age_onset_cat","hmw.lmw","asthma_delay","asthma_work_time","persist","time_last_exp_m","time_last_exp_d","sputum","rhinitis_w",'rhinitis_onset',"conjonct_w","wheezing_w","cough_w","tightness_w","dyspnea_w","sinusitis","dysphonia_w","severity_asthma_step_w","saba_w_frequency","exa_2","severity_ats","baseline_fev1","airway_obstruction","nsbh.res",'nsh_sic_max_ratio','ics_w',"saba_w","anti_h1_w","asper","iget","ger","prick_test","specific_ige","type_reaction","sputum_pre_sic", "sputum_post_sic","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+varnorm<-names(darf)[names(darf)%in%c("age","bmi","baseline_fev1")]
+varexac<-names(darf)[names(darf)%in%c("education","age_onset_cat,severity_asthma_step_w")]
+varnonorm<-names(darf)[names(darf)%in%c("asthma_delay","asthma_work_time","time_last_exp_m","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+
+tabegr<-CreateTableOne(vars = varshort,strata = "groups2",data = darf,addOverall = TRUE)
+p<-print(tabegr,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:4], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+ add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+
+```
+
+
+
+
+
+## Cluster en 3 catégories
+
+```{r}
+ hclust.rf <- hclust(as.dist(1-fit.rf$proximity),method = "ward.D2")
+  plot( hclust.rf )
+  rect.hclust(hclust.rf, k=3,border=1:3)
+```
+
+
+## Analyse comparative des 3 clusters
+```{r}
+darf$groups <- cutree(hclust.rf, k=3)
+
+varshort<-names(darf)[names(darf)%in%c('age','sex','diagnosis','bmi','obes',"smoker","education","atopy","asthma_pre","age_onset_cat","hmw.lmw","asthma_delay","asthma_work_time","persist","time_last_exp_m","time_last_exp_d","sputum","rhinitis_w",'rhinitis_onset',"conjonct_w","wheezing_w","cough_w","tightness_w","dyspnea_w","sinusitis","dysphonia_w","severity_asthma_step_w","saba_w_frequency","exa_2","severity_ats","baseline_fev1","airway_obstruction","nsbh.res",'nsh_sic_max_ratio','ics_w',"saba_w","anti_h1_w","asper","iget","ger","prick_test","specific_ige","type_reaction","sputum_pre_sic", "sputum_post_sic","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+varnorm<-names(darf)[names(darf)%in%c("age","bmi","baseline_fev1")]
+varexac<-names(darf)[names(darf)%in%c("education","age_onset_cat,severity_asthma_step_w")]
+varnonorm<-names(darf)[names(darf)%in%c("asthma_delay","asthma_work_time","time_last_exp_m","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+
+tabegr<-CreateTableOne(vars = varshort,strata = "groups",data = darf,addOverall = TRUE)
+p<-print(tabegr,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:5], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+ add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+```
+
+## Cluster à 4 catégories
+
+```{r}
+ plot( hclust.rf )
+  rect.hclust(hclust.rf, k=4,border=1:4)
+```
+
+
+```{r}
+
+darf$groups4 <- cutree(hclust.rf, k=4)
+
+varshort<-names(darf)[names(darf)%in%c('age','sex','diagnosis','bmi','obes',"smoker","education","atopy","asthma_pre","age_onset_cat","hmw.lmw","asthma_delay","asthma_work_time","persist","time_last_exp_m","time_last_exp_d","sputum","rhinitis_w",'rhinitis_onset',"conjonct_w","wheezing_w","cough_w","tightness_w","dyspnea_w","sinusitis","dysphonia_w","severity_asthma_step_w","saba_w_frequency","exa_2","severity_ats","baseline_fev1","airway_obstruction","nsbh.res",'nsh_sic_max_ratio','ics_w',"saba_w","anti_h1_w","asper","iget","ger","prick_test","specific_ige","type_reaction","sputum_pre_sic", "sputum_post_sic","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+varnorm<-names(darf)[names(darf)%in%c("age","bmi","baseline_fev1")]
+varexac<-names(darf)[names(darf)%in%c("education","age_onset_cat,severity_asthma_step_w")]
+varnonorm<-names(darf)[names(darf)%in%c("asthma_delay","asthma_work_time","time_last_exp_m","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+
+tabegr<-CreateTableOne(vars = varshort,strata = "groups4",data = darf,addOverall = TRUE)
+p<-print(tabegr,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:6], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+ add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+
+```
+
+
+## Cluster à 5 catégories
+
+```{r}
+ plot( hclust.rf )
+  rect.hclust(hclust.rf, k=5,border=1:5)
+```
+
+
+```{r}
+
+darf$groups5 <- cutree(hclust.rf, k=5)
+
+varshort<-names(darf)[names(darf)%in%c('age','sex','diagnosis','bmi','obes',"smoker","education","atopy","asthma_pre","age_onset_cat","hmw.lmw","asthma_delay","asthma_work_time","persist","time_last_exp_m","time_last_exp_d","sputum","rhinitis_w",'rhinitis_onset',"conjonct_w","wheezing_w","cough_w","tightness_w","dyspnea_w","sinusitis","dysphonia_w","severity_asthma_step_w","saba_w_frequency","exa_2","severity_ats","baseline_fev1","airway_obstruction","nsbh.res",'nsh_sic_max_ratio','ics_w',"saba_w","anti_h1_w","asper","iget","ger","prick_test","specific_ige","type_reaction","sputum_pre_sic", "sputum_post_sic","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+varnorm<-names(darf)[names(darf)%in%c("age","bmi","baseline_fev1")]
+varexac<-names(darf)[names(darf)%in%c("education","age_onset_cat,severity_asthma_step_w")]
+varnonorm<-names(darf)[names(darf)%in%c("asthma_delay","asthma_work_time","time_last_exp_m","eosino_post_sic","neutro_post_sic","feno_pre_sic","blood_eosino")]
+
+tabegr<-CreateTableOne(vars = varshort,strata = "groups5",data = darf,addOverall = TRUE)
+p<-print(tabegr,nonnormal = varshort,exact =varshort, smd = FALSE, printToggle = FALSE, noSpaces = TRUE, test=T, dropEqual = T)
+kable(p[,1:7], booktabs = T,format = "html") %>% 
+  row_spec(0,bold=TRUE) %>% 
+ 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+ add_footnote("Median[Q1, Q3], n(%), p: wilcoxon or kruskal tests, fisher exact test", notation="alphabet")
+
+```
+
+
+
+
+
+
+#####################""
+
+
+```{r}
+grphc <- cutree(hclust.rf, k=7)
+table(grphc)
+tsnemat <- Rtsne(X = fit.rf$proximity, dims = 2, perplexity = 50, max_iter = 5000)
+plot(tsnemat$Y[,])
+dbscan::kNNdistplot(df, k =  5)
+dbres <- dbscan(data = tsnemat$Y, eps =7, MinPts = 5)
+table(dbres$cluster)
+table(dbres$cluster, grphc)
+plot(dbres, tsnemat$Y[,1:2])
+```
+
